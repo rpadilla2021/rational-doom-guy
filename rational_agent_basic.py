@@ -56,4 +56,4 @@ def main(notebook=False):
 
 
 if __name__ == '__main__':
-    main(notebook=True)
+    main(notebook=False)

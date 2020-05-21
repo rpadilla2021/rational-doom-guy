@@ -140,8 +140,6 @@ def rational_trainer():
 
     # Step 14: Save NN weights to a file so that it can later be read for testing the agent
     # TODO: use torch or keras builtin save method, do not write ur own or use pickle
-    
-
 
 
 if __name__ == '__main__':

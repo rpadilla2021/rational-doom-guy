@@ -3,6 +3,7 @@ import random, time
 from pprint import pprint
 import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image
 
 
 def print_game_state(gameState, notebook=False):
@@ -10,12 +11,24 @@ def print_game_state(gameState, notebook=False):
     print("Game Variables:", gameState.game_variables, "\t Labels", gameState.labels)
 
     print("Screen Buffer:", gameState.screen_buffer.shape)
+    processed = gameState.screen_buffer
+    processed = preprocess_state_image(processed)
     if notebook:
-        proccesed = np.mean(gameState.screen_buffer, axis=0)
-        plt.imshow(proccesed, cmap="gray")
+        plt.imshow(processed, cmap='gray')
         plt.show()
     else:
-        print(gameState.screen_buffer, "\n")
+        print(processed, "\n")
+
+
+def preprocess_state_image(img):
+    result = np.mean(img, axis=0)
+    new_size_pil = (4*result.shape[1]) // 5, (4*result.shape[0]) // 5
+    result = Image.fromarray(result)
+    result = result.resize(new_size_pil, resample=Image.LANCZOS)
+    result = np.array(result)
+    print("Resizing from ", img.shape, " to ", result.shape)
+    return result
+
 
 def main(notebook=False):
     game = DoomGame()
@@ -43,4 +56,4 @@ def main(notebook=False):
 
 
 if __name__ == '__main__':
-    main(notebook=False)
+    main(notebook=True)

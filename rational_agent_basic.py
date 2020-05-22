@@ -5,11 +5,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from collections import namedtuple
+from DataStructures import *
+from DQN import BasicDQN
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+import torchvision.transforms as T
+from itertools import count
 
 Experience = namedtuple(
     'Experience',
     ('state', 'action', 'next_state', 'reward')
 )
+
 
 def print_game_state(gameState, notebook=False):
     print("Number:", gameState.number, "\t Tic:", gameState.tic)
@@ -74,18 +83,24 @@ def rational_trainer():
     actions = [shoot, left, right]
 
     # Step 2: Intitialize replay memory capacity
-    # TODO
-
+    capacity = 10000 # HYPERPARAM
+    memo = ReplayMemory(capacity)
 
     # Step 3: Construct and initialize policy network with random weights or weights from previous training sessions
-    # TODO
+    policy_nn = BasicDQN((192, 256, 1))
 
     # Step 3: Clone policy network to make target network
-    # TODO
+    target_nn = BasicDQN((192, 256, 1))
+    target_nn.load_state_dict(policy_nn.state_dict())  # clones the weights of policy into target
+    target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
+
+    # Step 3b: Initialize an Optimizer
+    learning_rate = 0.01  # HYPERPARAM
+    optimizer = optim.Adam(params=policy_nn.parameters(), lr=learning_rate)
 
     # Step 4: Iterate over episodes
     episodes = 5
-    epsilon = 0.05
+    explorer = Explorer(1, 0.05, 0.5)
     time_step_ctr = 0
 
     for i in range(episodes):
@@ -97,7 +112,7 @@ def rational_trainer():
             # Step 6: Select an action, either exploration or exploitation
             initial_state = game.get_state()
 
-            if random.random() < epsilon:  # Exploration
+            if random.random() < explorer.curr_epsilon():  # Exploration
                 action_todo = random.choice(actions)
             else:
                 # TODO: Choose action via exploitation of neural net
@@ -110,10 +125,11 @@ def rational_trainer():
             exp = Experience(initial_state, action_todo, final_state, reward_received)
 
             # Step 8: Store experience in replay memory
-            # TODO
+            memo.push(exp)
 
             # Step 9: Sample random batch from replay memory
-            # TODO
+            batch_size = 100
+            batch = memo.sample(batch_size)
 
             # Step 10: Pre-process states from branch
             # TODO: just use the preprocess method

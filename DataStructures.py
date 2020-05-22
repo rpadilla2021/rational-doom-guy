@@ -4,7 +4,7 @@ from collections import deque
 import numpy as np
 
 
-class ReplayMemory():
+class ReplayMemory:
     def __init__(self, max_capacity):
         self.q = deque()
         self.cap = max_capacity
@@ -28,7 +28,7 @@ class ReplayMemory():
         return np.random.choice(list(self.q), size, replace=False)
 
 
-class Explorer():
+class Explorer:
     def __init__(self, epsilon_initial, epsilon_final, decay_rate):
         self.i, self.f, self.rate = epsilon_initial, epsilon_final, decay_rate
         self.step_ctr = 0
@@ -37,3 +37,6 @@ class Explorer():
         result = self.f + (self.i - self.f) * np.e ** (-1 * self.step_ctr * self.rate)
         self.step_ctr += 1
         return result
+
+    def curr_epsilon_step(self, step):
+        return self.f + (self.i - self.f) * np.e ** (-1 * step * self.rate)

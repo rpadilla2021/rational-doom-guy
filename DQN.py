@@ -5,22 +5,28 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 from itertools import count
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 # Purpose of this class is to define our neural_net architecture and the methods we need to train, save, and test our NN
 
 class BasicDQN(nn.Module):
 
-    def __init__(self, img_height, img_width):
+    def __init__(self, img_shape):
         super.__init__()
+        in_feats = np.product(list(img_shape))
         # TODO: Finalize and implement final NN aritcheture to calculate q values
-        self.fc1 = nn.Linear(in_features=img_height * img_width, out_features=32)
+        self.fc1 = nn.Linear(in_features=in_feats, out_features=32)
         self.fc2 = nn.Linear(in_features=32, out_features=10)
         self.out = nn.Linear(in_features=10, 3)
 
     def forward(self, t):
+        # TODO: Will need to update as architecture (above) changes
         t = t.flatten(start_dim=1)
         t = F.relu(self.fc1(t))
         t = F.relu(self.fc2(t))
-        t = F.softmax(self.out(t))
+        t = self.out(t)
         return t
+
+    # TODO: implement backprop using autograd and optimizers for our network
+

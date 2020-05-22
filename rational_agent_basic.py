@@ -4,7 +4,12 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
+from collections import namedtuple
 
+Experience = namedtuple(
+    'Experience',
+    ('state', 'action', 'next_state', 'reward')
+)
 
 def print_game_state(gameState, notebook=False):
     print("Number:", gameState.number, "\t Tic:", gameState.tic)
@@ -42,7 +47,7 @@ def main_random(notebook=False):
     right = [0, 1, 0]
     actions = [shoot, left, right]
 
-    episodes = 10
+    episodes = 5
     for i in range(episodes):
         game.new_episode()
         while not game.is_episode_finished():
@@ -70,6 +75,7 @@ def rational_trainer():
 
     # Step 2: Intitialize replay memory capacity
     # TODO
+
 
     # Step 3: Construct and initialize policy network with random weights or weights from previous training sessions
     # TODO
@@ -101,7 +107,7 @@ def rational_trainer():
             reward_received = game.make_action(action_todo)
             final_state = game.get_state()
 
-            experience = initial_state, action_todo, reward_received, final_state
+            exp = Experience(initial_state, action_todo, final_state, reward_received)
 
             # Step 8: Store experience in replay memory
             # TODO

@@ -83,14 +83,14 @@ def rational_trainer():
     actions = [shoot, left, right]
 
     # Step 2: Intitialize replay memory capacity
-    capacity = 10000 # HYPERPARAM
+    capacity = 10000  # HYPERPARAM
     memo = ReplayMemory(capacity)
 
     # Step 3: Construct and initialize policy network with random weights or weights from previous training sessions
-    policy_nn = BasicDQN((192, 256, 1))
+    policy_nn = BasicDQN((192, 256, 1))  # change if preprocessing changes
 
     # Step 3: Clone policy network to make target network
-    target_nn = BasicDQN((192, 256, 1))
+    target_nn = BasicDQN((192, 256, 1)) # change if preprocessing changes
     target_nn.load_state_dict(policy_nn.state_dict())  # clones the weights of policy into target
     target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
 

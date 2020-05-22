@@ -18,7 +18,7 @@ class BasicDQN(nn.Module):
         # TODO: Finalize and implement final NN aritcheture to calculate q values
         self.fc1 = nn.Linear(in_features=in_feats, out_features=32)
         self.fc2 = nn.Linear(in_features=32, out_features=10)
-        self.out = nn.Linear(in_features=10, 3)
+        self.out = nn.Linear(in_features=10, out_features=3)
 
     def forward(self, t):
         # TODO: Will need to update as architecture (above) changes
@@ -28,5 +28,11 @@ class BasicDQN(nn.Module):
         t = self.out(t)
         return t
 
-    # TODO: implement backprop using autograd and optimizers for our network
 
+def get_current_QVals(policy_net: BasicDQN, states, actions):
+    return policy_net.forward(states).gather(dim=1, index=actions.unsqueeze(-1))
+
+
+def get_next_QVals(target_net, next_states):
+    # TODO: get next q-values
+    pass

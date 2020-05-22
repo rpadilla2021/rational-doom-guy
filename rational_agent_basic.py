@@ -4,7 +4,6 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
-from collections import namedtuple
 from DataStructures import *
 from DQN import BasicDQN
 import torch
@@ -14,13 +13,11 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 from itertools import count
 
-Experience = namedtuple(
-    'Experience',
-    ('state', 'action', 'next_state', 'reward')
-)
-
 
 def print_game_state(gameState, notebook=False):
+    if not gameState:
+        print("\n\n ------------------------Terminal (None) State---------------------------\n\n")
+        return
     print("Number:", gameState.number, "\t Tic:", gameState.tic)
     print("Game Variables:", gameState.game_variables, "\t Labels", gameState.labels)
 
@@ -59,12 +56,14 @@ def main_random(notebook=False):
     episodes = 5
     for i in range(episodes):
         game.new_episode()
+        state = game.get_state()
+        print_game_state(state, notebook)
         while not game.is_episode_finished():
+            # state = game.get_state()
+            # print_game_state(state, notebook)
+            reward = game.make_action(random.choice(actions))
             state = game.get_state()
             print_game_state(state, notebook)
-            img = state.screen_buffer
-            misc = state.game_variables
-            reward = game.make_action(random.choice(actions))
             print("\treward:", reward)
             time.sleep(0.01)
         print("Result:", game.get_total_reward())
@@ -90,7 +89,7 @@ def rational_trainer():
     policy_nn = BasicDQN((192, 256, 1))  # change if preprocessing changes
 
     # Step 3: Clone policy network to make target network
-    target_nn = BasicDQN((192, 256, 1)) # change if preprocessing changes
+    target_nn = BasicDQN((192, 256, 1))  # change if preprocessing changes
     target_nn.load_state_dict(policy_nn.state_dict())  # clones the weights of policy into target
     target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
 
@@ -149,10 +148,10 @@ def rational_trainer():
 
             # Step 13: Every x timesteps, the weights of the target network are updated
             #          to be the weights of the policy network, small pertubations can be added
-            time_step_lim = 20
-            if time_step_ctr >= time_step_lim:
+            target_update_steps = 25
+            if time_step_ctr % time_step_lim == 0:
                 # TODO: Update target network to copy of policy network
-                time_step_ctr = 0
+                target_nn.load_state_dict(policy_nn.state_dict())
 
             # update required values
             time_step_ctr += 1

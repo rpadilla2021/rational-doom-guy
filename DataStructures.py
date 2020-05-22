@@ -2,6 +2,21 @@
 # This will allow us to abstract away many of the nitty gritty details of storing experiences
 from collections import deque
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+import torchvision.transforms as T
+from itertools import count
+import matplotlib.pyplot as plt
+import numpy as np
+from collections import namedtuple
+
+
+Experience = namedtuple(
+    'Experience',
+    ('state', 'action', 'next_state', 'reward')
+)
 
 
 class ReplayMemory:
@@ -26,6 +41,17 @@ class ReplayMemory:
         if not self.can_sample(size):
             assert False, "Sample size too large to extract from replay memory"
         return np.random.choice(list(self.q), size, replace=False)
+
+    def sample_tensors(self, size=1):
+        exp_seperate = self.sample(size)
+        batch_exp = Experience(*zip(*exp_seperate))
+
+        s = torch.cat(batch_exp.state)
+        a = torch.cat(batch_exp.action)
+        r = torch.cat(batch_exp.reward)
+        s_prime = torch.cat(batch_exp.next_state)
+
+        return s, a, s_prime, r
 
 
 class Explorer:

@@ -1,3 +1,4 @@
 ViZDoom/
 *.xml
 .idea/
+*.pyc

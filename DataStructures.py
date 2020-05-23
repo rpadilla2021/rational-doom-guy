@@ -8,7 +8,6 @@ import torch.optim as optim
 import torch.nn.functional as F
 import torchvision.transforms as T
 from itertools import count
-import matplotlib.pyplot as plt
 import numpy as np
 from collections import namedtuple
 

@@ -1,7 +1,6 @@
 from vizdoom import *
 import random, time
 from pprint import pprint
-import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 from DataStructures import *

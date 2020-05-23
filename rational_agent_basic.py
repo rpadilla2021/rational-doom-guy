@@ -86,10 +86,13 @@ def rational_trainer():
     memo = ReplayMemory(capacity)
 
     # Step 3: Construct and initialize policy network with random weights or weights from previous training sessions
-    policy_nn = BasicDQN((192, 256, 1))  # change if preprocessing changes
+    game.new_episode()
+    test_state = game.get_state()
+    processed_test = preprocess_state_image(test_state.screen_buffer)
+    policy_nn = BasicDQN(processed_test.shape)  # change if preprocessing changes
 
     # Step 3: Clone policy network to make target network
-    target_nn = BasicDQN((192, 256, 1))  # change if preprocessing changes
+    target_nn = BasicDQN(processed_test.shape)  # change if preprocessing changes
     target_nn.load_state_dict(policy_nn.state_dict())  # clones the weights of policy into target
     target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
 
@@ -121,7 +124,6 @@ def rational_trainer():
             reward_received = game.make_action(action_todo)
             final_state = game.get_state()
 
-
             # Step 8 Preprocess and create expeience states
             processed_s = preprocess_state_image(initial_state.screen_buffer)
             processed_s_prime = preprocess_state_image(final_state.screen_buffer)
@@ -132,7 +134,7 @@ def rational_trainer():
 
             # Step 10: Sample random batch from replay memory
             batch_size = 100
-            batch = memo.sample(batch_size)
+            states, actions, next_states, rewards = memo.sample(batch_size)
 
             # Step 11a: Pass states through the policy network and aquire output Q-values
             # TODO

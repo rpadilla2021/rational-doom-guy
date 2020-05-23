@@ -2,3 +2,5 @@ ViZDoom/
 *.xml
 .idea/
 *.pyc
+_vizdoom.ini
+_vizdoom.ini

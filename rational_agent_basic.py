@@ -121,17 +121,18 @@ def rational_trainer():
             reward_received = game.make_action(action_todo)
             final_state = game.get_state()
 
-            exp = Experience(initial_state, action_todo, final_state, reward_received)
 
-            # Step 8: Store experience in replay memory
+            # Step 8 Preprocess and create expeience states
+            processed_s = preprocess_state_image(initial_state.screen_buffer)
+            processed_s_prime = preprocess_state_image(final_state.screen_buffer)
+            exp = Experience(processed_s, action_todo, processed_s_prime, reward_received)
+
+            # Step 9: Store experience in replay memory
             memo.push(exp)
 
-            # Step 9: Sample random batch from replay memory
+            # Step 10: Sample random batch from replay memory
             batch_size = 100
             batch = memo.sample(batch_size)
-
-            # Step 10: Pre-process states from branch
-            # TODO: just use the preprocess method
 
             # Step 11a: Pass states through the policy network and aquire output Q-values
             # TODO

@@ -11,6 +11,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import torchvision.transforms as T
 from itertools import count
+import matplotlib.pyplot as plt
 
 
 def print_game_state(gameState, notebook=False):
@@ -32,9 +33,9 @@ def print_game_state(gameState, notebook=False):
 
 def preprocess_state_image(img):
     result = np.mean(img, axis=0)
-    new_size_pil = (4 * result.shape[1]) // 5, (4 * result.shape[0]) // 5
+    crops = (50, 80, result.shape[1]-50, result.shape[0] - 80)
     result = Image.fromarray(result)
-    result = result.resize(new_size_pil, resample=Image.LANCZOS)
+    result = result.crop(crops)
     result = np.array(result)
     print("Resizing from ", img.shape, " to ", result.shape)
     return result
@@ -88,10 +89,10 @@ def rational_trainer():
     game.new_episode()
     test_state = game.get_state()
     processed_test = preprocess_state_image(test_state.screen_buffer)
-    policy_nn = BasicDQN(processed_test.shape)  # change if preprocessing changes
+    policy_nn = BasicDQN(processed_test.shape, actions)
 
     # Step 3: Clone policy network to make target network
-    target_nn = BasicDQN(processed_test.shape)  # change if preprocessing changes
+    target_nn = BasicDQN(processed_test.shape, actions)
     target_nn.load_state_dict(policy_nn.state_dict())  # clones the weights of policy into target
     target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
 
@@ -112,19 +113,18 @@ def rational_trainer():
         while not game.is_episode_finished():
             # Step 6: Select an action, either exploration or exploitation
             initial_state = game.get_state()
+            processed_s = preprocess_state_image(initial_state.screen_buffer)
 
             if random.random() < explorer.curr_epsilon():  # Exploration
                 action_todo = random.choice(actions)
             else:
-                # TODO: Choose action via exploitation of neural net
-                action_todo = random.choice(actions)  # REPLACE THIS LINE with action with the largest Q value
+                action_todo = policy_nn.select_best_action(processed_s) # exploitation
 
             # Step 7: Execute selected action in an emulator
             reward_received = game.make_action(action_todo)
             final_state = game.get_state()
 
             # Step 8 Preprocess and create expeience states
-            processed_s = preprocess_state_image(initial_state.screen_buffer)
             processed_s_prime = preprocess_state_image(final_state.screen_buffer)
             exp = Experience(processed_s, action_todo, processed_s_prime, reward_received)
 
@@ -166,4 +166,4 @@ def rational_trainer():
 
 
 if __name__ == '__main__':
-    main_random(notebook=False)
+    main_random(notebook=True)

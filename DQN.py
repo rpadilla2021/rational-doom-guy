@@ -11,13 +11,15 @@ import numpy as np
 
 class BasicDQN(nn.Module):
 
-    def __init__(self, img_shape):
+    def __init__(self, img_shape, output_actions):
         super.__init__()
         in_feats = np.product(list(img_shape))
+        self.actions = output_actions
+        out_feats = len(output_actions)
         # TODO: Finalize and implement final NN aritcheture to calculate q values
         self.fc1 = nn.Linear(in_features=in_feats, out_features=32)
         self.fc2 = nn.Linear(in_features=32, out_features=10)
-        self.out = nn.Linear(in_features=10, out_features=3)
+        self.out = nn.Linear(in_features=10, out_features=out_feats)
 
     def forward(self, t):
         # TODO: Will need to update as architecture (above) changes
@@ -27,6 +29,10 @@ class BasicDQN(nn.Module):
         t = self.out(t)
         return t
 
+    def select_best_action(self, state):
+        with torch.no_grad():
+            result = self.forward(state).argmax(dim=1).item()  # Exploitation
+            return self.actions[result]
 
 def get_current_QVals(policy_net: BasicDQN, states, actions):
     return policy_net.forward(states).gather(dim=1, index=actions.unsqueeze(-1))

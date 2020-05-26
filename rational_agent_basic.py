@@ -33,7 +33,7 @@ def print_game_state(gameState, notebook=False):
 
 def preprocess_state_image(img):
     result = np.mean(img, axis=0)
-    crops = (50, 80, result.shape[1]-50, result.shape[0] - 80)
+    crops = (50, 80, result.shape[1] - 50, result.shape[0] - 80)
     result = Image.fromarray(result)
     result = result.crop(crops)
     result = np.array(result)
@@ -70,7 +70,7 @@ def main_random(notebook=False):
         time.sleep(1)
 
 
-def rational_trainer():
+def rational_trainer(notebook=False):
     # Step 1: Initialize game enviornment
     game = DoomGame()
     game.load_config("vizdoom/scenarios/basic.cfg")
@@ -118,7 +118,7 @@ def rational_trainer():
             if random.random() < explorer.curr_epsilon():  # Exploration
                 action_todo = random.choice(actions)
             else:
-                action_todo = policy_nn.select_best_action(processed_s) # exploitation
+                action_todo = policy_nn.select_best_action(processed_s)  # exploitation
 
             # Step 7: Execute selected action in an emulator
             reward_received = game.make_action(action_todo)
@@ -143,16 +143,19 @@ def rational_trainer():
             # TODO
 
             # Step 11c: Calculate MSE (or any other) Loss between output and target values
-            # TODO: use scipy loss functions, do not write ur own
+            # TODO: use scipy or torch loss functions, do not write ur own
+            loss = F.mse_loss(None, None) # replace the nones
 
             # Step 12: Use gradient descent, or ADAM, to update weights along the policy network
-            # TODO: Dont write backprop urself, use the deep learning library (Keras or Pytorch)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
 
             # Step 13: Every x timesteps, the weights of the target network are updated
             #          to be the weights of the policy network, small pertubations can be added
             target_update_steps = 25
-            if time_step_ctr % time_step_lim == 0:
-                # TODO: Update target network to copy of policy network
+            if time_step_ctr % target_update_steps == 0:
                 target_nn.load_state_dict(policy_nn.state_dict())
 
             # update required values
@@ -162,7 +165,50 @@ def rational_trainer():
         time.sleep(1)
 
     # Step 14: Save NN weights to a file so that it can later be read for testing the agent
-    # TODO: use torch or keras builtin save method, do not write ur own or use pickle
+    torch.save(policy_nn.state_dict(), 'rational_net_basic.model')
+
+
+def rational_tester(model_path, notebook=False):
+    # Initialize game enviornment
+    game = DoomGame()
+    game.load_config("vizdoom/scenarios/basic.cfg")
+    game.init()
+
+    shoot = [0, 0, 1]
+    left = [1, 0, 0]
+    right = [0, 1, 0]
+    actions = [shoot, left, right]
+
+    # Loading the policy net from model path
+    game.new_episode()
+    test_state = game.get_state()
+    processed_test = preprocess_state_image(test_state.screen_buffer)
+    policy_nn = BasicDQN(processed_test.shape, actions)
+
+    policy_nn.load_state_dict(torch.load(model_path))
+    policy_nn.eval()
+
+    episodes = 5
+    for i in range(episodes):
+        game.new_episode()
+        state = game.get_state()
+        print_game_state(state, notebook)
+        while not game.is_episode_finished():
+            initial_state = game.get_state()
+            processed_s = preprocess_state_image(initial_state.screen_buffer)
+
+            action_todo = policy_nn.select_best_action(processed_s)
+            reward = game.make_action(action_todo)
+
+            state = game.get_state()
+            print_game_state(state, notebook)
+
+            print("\treward:", reward)
+
+            time.sleep(0.02)
+
+        print("Result:", game.get_total_reward())
+        time.sleep(1)
 
 
 if __name__ == '__main__':

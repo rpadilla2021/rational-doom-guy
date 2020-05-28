@@ -130,7 +130,7 @@ def rational_trainer(notebook=False):
             initial_state = game.get_state()
             processed_s = preprocess_state_image(initial_state.screen_buffer)
 
-            skip_rate = 3  # Hyperparam
+            skip_rate = 4  # Hyperparam
             if random.random() < explorer.curr_epsilon():  # Exploration
                 action_todo = random.choice(actions)
                 # print("Random Action:", action_todo)
@@ -156,7 +156,7 @@ def rational_trainer(notebook=False):
             memo.push(exp)
 
             # Step 10: Sample random batch from replay memory
-            batch_size = 200
+            batch_size = 250
             loss = torch.tensor(-1)
             if memo.can_sample(batch_size):
                 states, actions, next_states, rewards = memo.sample_tensors(batch_size)
@@ -181,9 +181,9 @@ def rational_trainer(notebook=False):
 
             # Step 13: Every x timesteps, the weights of the target network are updated
             #          to be the weights of the policy network, small pertubations can be added
-            target_update_steps = 50000
+            target_update_steps = 2000
             if time_step_ctr == target_update_steps:
-                print("Updating Target Net")
+                print("Updating Target Net-------------------------------------------------------------------------")
                 target_nn.load_state_dict(policy_nn.state_dict())
                 time_step_ctr = 0
 
@@ -224,7 +224,7 @@ def rational_tester(model_path, notebook=False):
     policy_nn.load_state_dict(torch.load(model_path))
     policy_nn.eval()
 
-    episodes = 5
+    episodes = 20
     for i in range(episodes):
         game.new_episode()
         state = game.get_state()
@@ -235,20 +235,20 @@ def rational_tester(model_path, notebook=False):
 
             action_todo = policy_nn.select_best_action(processed_s, show=True)
             action_todo = list(action_todo)
-            reward = game.make_action(action_todo, 3)
+            reward = game.make_action(action_todo, 4)
 
             state = game.get_state()
             print_game_state(state, notebook)
 
             print("\treward:", reward)
 
-            time.sleep(0.02)
+            time.sleep(0.05)
 
         print("Result:", game.get_total_reward())
         time.sleep(1)
 
 
 if __name__ == '__main__':
-    rational_trainer()
+    # rational_trainer()
     rational_tester('rational_net_basic.model')
     # main_random(notebook=True)  # Change this to true to see what the preproccessed images look like

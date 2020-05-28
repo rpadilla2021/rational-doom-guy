@@ -19,12 +19,13 @@ class BasicDQN(nn.Module):
         out_feats = len(output_actions)
         # TODO: Finalize and implement final NN aritcheture to calculate q values
         print("CREATING THE NET, INPUT FEATURES", img_shape, "      OUTPUT FEATURES ", out_feats)
-        self.conv1 = nn.Conv2d(1, 6, 4, stride=(1, 2))
-        self.conv2 = nn.Conv2d(6, 2, 3, stride=(1, 2))
+        self.conv1 = nn.Conv2d(1, 6, 3, stride=1)
+        self.pool1 = nn.MaxPool2d((2, 2), padding=(0, 0), dilation=(1, 1))
+        self.conv2 = nn.Conv2d(6, 2, 2, stride=1)
 
         f = self.get_dim_post_conv
 
-        resize_dim = f(f(img_shape, self.conv1), self.conv2)
+        resize_dim = f(f(f(f(img_shape, self.conv1), self.pool1), self.conv2), self.pool1)
         print("After Convolutions Size: ", resize_dim)
 
         in_feats = np.product(list(resize_dim))
@@ -35,18 +36,26 @@ class BasicDQN(nn.Module):
         self.out = nn.Linear(in_features=8, out_features=out_feats)
 
     @staticmethod
-    def get_dim_post_conv(img_shape, conv_layer: nn.Conv2d):
+    def get_dim_post_conv(img_shape, conv_layer):
         if len(img_shape) == 2:
             img_shape = (1, img_shape[0], img_shape[1])
 
         in_channels, h_in, w_in = img_shape
 
         assert img_shape[0] == in_channels
+        #print(conv_layer.padding)
+        h_out = (h_in + 2 * conv_layer.padding[0] - conv_layer.dilation[0] * (conv_layer.kernel_size[0] - 1) - 1)/ conv_layer.stride[0] + 1
+        w_out = (w_in + 2 * conv_layer.padding[1] - conv_layer.dilation[1] * (conv_layer.kernel_size[1] - 1) - 1)/conv_layer.stride[1] + 1
+        #print(h_out, w_out)
+        h_out, w_out = int(np.floor(h_out)), int(np.floor(w_out))
 
-        h_out = (h_in + 2*conv_layer.padding[0] - conv_layer.dilation[0]*(conv_layer.kernel_size[0]-1)-1)//conv_layer.stride[0] + 1
-        w_out = (w_in + 2*conv_layer.padding[1] - conv_layer.dilation[1]*(conv_layer.kernel_size[1]-1)-1)//conv_layer.stride[1] + 1
+        if not hasattr(conv_layer, 'out_channels'):
+            result = in_channels, h_out, w_out
+        else:
+            result = conv_layer.out_channels, h_out, w_out
 
-        return conv_layer.out_channels, h_out, w_out
+        #print(result)
+        return result
 
     def forward(self, t):
         # TODO: Will need to update as architecture (above) changes
@@ -55,19 +64,24 @@ class BasicDQN(nn.Module):
         t = t.unsqueeze(1)
 
         t = F.relu(self.conv1(t))
+        t = self.pool1(t)
         t = F.relu(self.conv2(t))
-
+        t = self.pool1(t)
+        # print(t.shape)
         t = t.view(-1, self.fc_feats)
+        # print(t.shape)
         t = F.relu(self.fc1(t))
         t = F.relu(self.fc2(t))
         t = self.out(t)
         return t
 
-    def select_best_action(self, state, show= False):
+    def select_best_action(self, state, show=False):
         with torch.no_grad():
             raw_vals = self.forward(state)
             if show:
                 print(raw_vals)
+
+            # print(raw_vals)
             result = raw_vals.argmax(dim=1).item()  # Exploitation
             result = self.actions[result]
             if show:

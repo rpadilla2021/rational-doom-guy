@@ -38,7 +38,11 @@ def preprocess_state_image(img):
     result = Image.fromarray(result)
     # Do PIL Pre Proccessing here
     result = np.array(result)
-    # print("Original size ", img.shape, " to ", result.shape)
+    #Shrinking vertically
+    result = result[70:185]
+    #Shrinking horizontally
+    result = result[:,75:250]
+    print("Original size ", img.shape, " to ", result.shape)
     return result
 
 
@@ -62,7 +66,7 @@ def main_random(notebook=False):
         print_game_state(state, notebook)
         while not game.is_episode_finished():
             # state = game.get_state()
-            # print_game_state(state, notebook)
+            #print_game_state(state, notebook)
             action_todo = list(random.choice(actions))
             reward = game.make_action(action_todo)
             state = game.get_state()

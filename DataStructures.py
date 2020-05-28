@@ -12,6 +12,7 @@ import numpy as np
 from collections import namedtuple
 from pprint import pprint
 import random
+import matplotlib.pyplot as plt
 
 Experience = namedtuple(
     'Experience',
@@ -67,3 +68,17 @@ class Explorer:
 
     def curr_epsilon_step(self, step):
         return self.f + (self.i - self.f) * np.e ** (-1 * step * self.rate)
+
+
+def moving_average(arr, period):
+    #arr = np.array(arr)
+    result = np.convolve(arr, np.ones(period), 'valid') / period
+    return result
+
+
+def plot(arr, ma_period):
+    plt.clf()
+    y = moving_average(arr, ma_period)
+    plt.plot(y)
+    plt.draw()
+    plt.pause(0.0001)

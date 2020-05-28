@@ -33,18 +33,21 @@ def print_game_state(gameState, notebook=False):
 
 
 def preprocess_state_image(img):
-    #TODO: Need to do more image preprocessing here, try to get the dimensions of the image down without loosing information
+    # TODO: Need to do more image preprocessing here, try to get the dimensions of the image down without loosing information
     result = np.mean(img, axis=0)
     # Shrinking vertically
-    result = result[95:120]
+    result = result[100:115]
     # Shrinking horizontally
     result = result[:, 75:250]
+    height, width = result.shape
+
     result = Image.fromarray(result)
     # Do PIL Pre Proccessing here
-    
-
+    width = (width * 4) // 5
+    height = (height * 4) // 5
+    result = result.resize((width, height), Image.ANTIALIAS)
     result = np.array(result)
-    print("Original size ", img.shape, " to ", result.shape)
+    # print("Original size ", img.shape, " to ", result.shape)
     return result
 
 
@@ -68,7 +71,7 @@ def main_random(notebook=False):
         print_game_state(state, notebook)
         while not game.is_episode_finished():
             # state = game.get_state()
-            #print_game_state(state, notebook)
+            # print_game_state(state, notebook)
             action_todo = list(random.choice(actions))
             reward = game.make_action(action_todo)
             state = game.get_state()
@@ -92,7 +95,7 @@ def rational_trainer(notebook=False):
     actions = [left, right, shoot]
 
     # Step 2: Intitialize replay memory capacity
-    capacity = 10000  # HYPERPARAM
+    capacity = 500000  # HYPERPARAM
     memo = ReplayMemory(capacity)
 
     # Step 3: Construct and initialize policy network with random weights or weights from previous training sessions
@@ -107,13 +110,15 @@ def rational_trainer(notebook=False):
     target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
 
     # Step 3b: Initialize an Optimizer
-    learning_rate = 0.05  # HYPERPARAM
+    learning_rate = 0.03  # HYPERPARAM
     optimizer = optim.Adam(params=policy_nn.parameters(), lr=learning_rate)
 
     # Step 4: Iterate over episodes
-    episodes = 250
-    explorer = Explorer(1, 0.05, 0.0001)
+    episodes = 5000
+    explorer = Explorer(1, 0.05, 0.00009)
     time_step_ctr = 0
+
+    rawards = []
 
     for i in range(episodes):
 
@@ -125,14 +130,13 @@ def rational_trainer(notebook=False):
             initial_state = game.get_state()
             processed_s = preprocess_state_image(initial_state.screen_buffer)
 
-
-            skip_rate = 3 # Hyperparam
+            skip_rate = 3  # Hyperparam
             if random.random() < explorer.curr_epsilon():  # Exploration
                 action_todo = random.choice(actions)
-                #print("Random Action:", action_todo)
+                # print("Random Action:", action_todo)
             else:
                 action_todo = policy_nn.select_best_action(processed_s)  # exploitation
-                #print("Optimal Action:", action_todo)
+                # print("Optimal Action:", action_todo)
 
             # Step 7: Execute selected action in an emulator
             action_todo = list(action_todo)
@@ -140,12 +144,13 @@ def rational_trainer(notebook=False):
             final_state = game.get_state()
 
             # Step 8 Preprocess and create expeience states
-            if final_state == None: # We are in  a terminal state
+            if final_state == None:  # We are in  a terminal state
                 processed_s_prime = np.zeros_like(processed_test)
             else:
                 processed_s_prime = preprocess_state_image(final_state.screen_buffer)
 
-            exp = Experience(torch.from_numpy(processed_s).unsqueeze(0), torch.tensor([action_todo]), torch.from_numpy(processed_s_prime).unsqueeze(0), torch.tensor([reward_received]))
+            exp = Experience(torch.from_numpy(processed_s).unsqueeze(0), torch.tensor([action_todo]),
+                             torch.from_numpy(processed_s_prime).unsqueeze(0), torch.tensor([reward_received]))
 
             # Step 9: Store experience in replay memory
             memo.push(exp)
@@ -161,23 +166,22 @@ def rational_trainer(notebook=False):
 
                 # Step 11b: Calculate target Q values. Pass successor states for each action through the target network
                 #           use bellman equation to calculate target value
-                gamma_discount = 0.9 # HYPERPARAM
+                gamma_discount = 0.99  # HYPERPARAM
                 next_q_vals = DQN.get_next_QVals(target_nn, next_states)
-                target_q_vals = rewards + gamma_discount*next_q_vals
+                target_q_vals = rewards + gamma_discount * next_q_vals
 
                 # Step 11c: Calculate MSE (or any other) Loss between output and target values
-                loss = F.mse_loss(pred_q_vals, target_q_vals) # replace the nones
-                #print("LOSS: ", loss.item())
+                loss = F.mse_loss(pred_q_vals, target_q_vals)  # replace the nones
+                # print("LOSS: ", loss.item())
 
                 # Step 12: Use gradient descent, or ADAM, to update weights along the policy network
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
 
-
             # Step 13: Every x timesteps, the weights of the target network are updated
             #          to be the weights of the policy network, small pertubations can be added
-            target_update_steps = 200
+            target_update_steps = 50000
             if time_step_ctr == target_update_steps:
                 print("Updating Target Net")
                 target_nn.load_state_dict(policy_nn.state_dict())
@@ -185,12 +189,15 @@ def rational_trainer(notebook=False):
 
             # update required values
             time_step_ctr += 1
-            time.sleep(0.001)
+            # time.sleep(0.001)
         print("Episode", i)
         print("Explorer", explorer.curr_epsilon())
-        print("Result:", game.get_total_reward())
+        final_reward = game.get_total_reward()
+        print("Result:", final_reward)
         print("Last LOSS:", loss.item())
-        time.sleep(0.01)
+        rawards.append(final_reward)
+        plot(rawards, 100)
+        time.sleep(0.005)
 
     # Step 14: Save NN weights to a file so that it can later be read for testing the agent
     torch.save(policy_nn.state_dict(), 'rational_net_basic.model')
@@ -226,9 +233,9 @@ def rational_tester(model_path, notebook=False):
             initial_state = game.get_state()
             processed_s = preprocess_state_image(initial_state.screen_buffer)
 
-            action_todo = policy_nn.select_best_action(processed_s, 4)
+            action_todo = policy_nn.select_best_action(processed_s, show=True)
             action_todo = list(action_todo)
-            reward = game.make_action(action_todo)
+            reward = game.make_action(action_todo, 3)
 
             state = game.get_state()
             print_game_state(state, notebook)
@@ -242,6 +249,6 @@ def rational_tester(model_path, notebook=False):
 
 
 if __name__ == '__main__':
-    # rational_trainer()
-    # rational_tester('rational_net_basic.model')
-    main_random(notebook=True) # Change this to true to see what the preproccessed images look like
+    rational_trainer()
+    rational_tester('rational_net_basic.model')
+    # main_random(notebook=True)  # Change this to true to see what the preproccessed images look like

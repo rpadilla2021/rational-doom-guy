@@ -19,20 +19,20 @@ class BasicDQN(nn.Module):
         out_feats = len(output_actions)
         # TODO: Finalize and implement final NN aritcheture to calculate q values
         print("CREATING THE NET, INPUT FEATURES", img_shape, "      OUTPUT FEATURES ", out_feats)
-        # self.conv1 = nn.Conv2d(1, 12, 10, stride=5)
-        # self.conv2 = nn.Conv2d(12, 5, 4, stride=2)
+        self.conv1 = nn.Conv2d(1, 6, 4, stride=(1, 2))
+        self.conv2 = nn.Conv2d(6, 2, 3, stride=(1, 2))
 
         f = self.get_dim_post_conv
 
-        resize_dim = img_shape
+        resize_dim = f(f(img_shape, self.conv1), self.conv2)
         print("After Convolutions Size: ", resize_dim)
 
         in_feats = np.product(list(resize_dim))
         self.fc_feats = in_feats
 
-        self.fc1 = nn.Linear(in_features=in_feats, out_features=32)
-        self.fc2 = nn.Linear(in_features=32, out_features=10)
-        self.out = nn.Linear(in_features=10, out_features=out_feats)
+        self.fc1 = nn.Linear(in_features=in_feats, out_features=16)
+        self.fc2 = nn.Linear(in_features=16, out_features=8)
+        self.out = nn.Linear(in_features=8, out_features=out_feats)
 
     @staticmethod
     def get_dim_post_conv(img_shape, conv_layer: nn.Conv2d):
@@ -54,8 +54,8 @@ class BasicDQN(nn.Module):
             t = torch.from_numpy(t).unsqueeze(0)
         t = t.unsqueeze(1)
 
-        # t = F.relu(self.conv1(t))
-        # t = F.relu(self.conv2(t))
+        t = F.relu(self.conv1(t))
+        t = F.relu(self.conv2(t))
 
         t = t.view(-1, self.fc_feats)
         t = F.relu(self.fc1(t))
@@ -63,13 +63,15 @@ class BasicDQN(nn.Module):
         t = self.out(t)
         return t
 
-    def select_best_action(self, state):
+    def select_best_action(self, state, show= False):
         with torch.no_grad():
             raw_vals = self.forward(state)
-            #print(raw_vals)
+            if show:
+                print(raw_vals)
             result = raw_vals.argmax(dim=1).item()  # Exploitation
             result = self.actions[result]
-            #print(result, "\n")
+            if show:
+                print(result, "\n")
             return result
 
 

@@ -5,6 +5,7 @@ import numpy as np
 from PIL import Image
 from DataStructures import *
 from DQN import BasicDQN
+import DQN
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -33,11 +34,10 @@ def print_game_state(gameState, notebook=False):
 
 def preprocess_state_image(img):
     result = np.mean(img, axis=0)
-    crops = (50, 80, result.shape[1] - 50, result.shape[0] - 80)
     result = Image.fromarray(result)
-    result = result.crop(crops)
+    # Do PIL Pre Proccessing here
     result = np.array(result)
-    print("Resizing from ", img.shape, " to ", result.shape)
+    # print("Resizing from ", img.shape, " to ", result.shape)
     return result
 
 
@@ -48,9 +48,9 @@ def main_random(notebook=False):
     game.load_config("vizdoom/scenarios/basic.cfg")
     game.init()
 
-    shoot = [0, 0, 1]
-    left = [1, 0, 0]
-    right = [0, 1, 0]
+    shoot = torch.tensor([0, 0, 1])
+    left = torch.tensor([1, 0, 0])
+    right = torch.tensor([0, 1, 0])
     actions = [shoot, left, right]
 
     episodes = 5
@@ -61,7 +61,8 @@ def main_random(notebook=False):
         while not game.is_episode_finished():
             # state = game.get_state()
             # print_game_state(state, notebook)
-            reward = game.make_action(random.choice(actions))
+            action_todo = list(random.choice(actions))
+            reward = game.make_action(action_todo)
             state = game.get_state()
             print_game_state(state, notebook)
             print("\treward:", reward)
@@ -101,8 +102,8 @@ def rational_trainer(notebook=False):
     optimizer = optim.Adam(params=policy_nn.parameters(), lr=learning_rate)
 
     # Step 4: Iterate over episodes
-    episodes = 5
-    explorer = Explorer(1, 0.05, 0.5)
+    episodes = 100
+    explorer = Explorer(1, 0.05, 0.001)
     time_step_ctr = 0
 
     for i in range(episodes):
@@ -117,52 +118,65 @@ def rational_trainer(notebook=False):
 
             if random.random() < explorer.curr_epsilon():  # Exploration
                 action_todo = random.choice(actions)
+                #print("Random Action:", action_todo)
             else:
                 action_todo = policy_nn.select_best_action(processed_s)  # exploitation
+                #print("Optimal Action:", action_todo)
 
             # Step 7: Execute selected action in an emulator
+            action_todo = list(action_todo)
             reward_received = game.make_action(action_todo)
             final_state = game.get_state()
 
             # Step 8 Preprocess and create expeience states
-            processed_s_prime = preprocess_state_image(final_state.screen_buffer)
-            exp = Experience(processed_s, action_todo, processed_s_prime, reward_received)
+            if final_state == None: # We are in  a terminal state
+                processed_s_prime = np.zeros_like(processed_test)
+            else:
+                processed_s_prime = preprocess_state_image(final_state.screen_buffer)
+
+            exp = Experience(torch.from_numpy(processed_s).unsqueeze(0), torch.tensor([action_todo]), torch.from_numpy(processed_s_prime).unsqueeze(0), torch.tensor([reward_received]))
 
             # Step 9: Store experience in replay memory
             memo.push(exp)
 
             # Step 10: Sample random batch from replay memory
             batch_size = 100
-            states, actions, next_states, rewards = memo.sample(batch_size)
+            loss = torch.tensor(-1)
+            if memo.can_sample(batch_size):
+                states, actions, next_states, rewards = memo.sample_tensors(batch_size)
 
-            # Step 11a: Pass states through the policy network and aquire output Q-values
-            # TODO
+                # Step 11a: Pass states through the policy network and aquire output Q-values
+                pred_q_vals = DQN.get_current_QVals(policy_nn, states, actions)
 
-            # Step 11b: Calculate target Q values. Pass successor states for each action through the target network
-            #           use bellman equation to calculate target value
-            # TODO
+                # Step 11b: Calculate target Q values. Pass successor states for each action through the target network
+                #           use bellman equation to calculate target value
+                gamma_discount = 0.9 # HYPERPARAM
+                next_q_vals = DQN.get_next_QVals(target_nn, next_states)
+                target_q_vals = rewards + gamma_discount*next_q_vals
 
-            # Step 11c: Calculate MSE (or any other) Loss between output and target values
-            # TODO: use scipy or torch loss functions, do not write ur own
-            loss = F.mse_loss(None, None) # replace the nones
+                # Step 11c: Calculate MSE (or any other) Loss between output and target values
+                loss = F.mse_loss(pred_q_vals, target_q_vals) # replace the nones
+                #print("LOSS: ", loss.item())
 
-            # Step 12: Use gradient descent, or ADAM, to update weights along the policy network
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+                # Step 12: Use gradient descent, or ADAM, to update weights along the policy network
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
 
             # Step 13: Every x timesteps, the weights of the target network are updated
             #          to be the weights of the policy network, small pertubations can be added
-            target_update_steps = 25
+            target_update_steps = 10
             if time_step_ctr % target_update_steps == 0:
                 target_nn.load_state_dict(policy_nn.state_dict())
 
             # update required values
             time_step_ctr += 1
-            time.sleep(0.01)
+            time.sleep(0.001)
+        print("Episode", i)
         print("Result:", game.get_total_reward())
-        time.sleep(1)
+        print("Last LOSS:", loss.item())
+        time.sleep(0.01)
 
     # Step 14: Save NN weights to a file so that it can later be read for testing the agent
     torch.save(policy_nn.state_dict(), 'rational_net_basic.model')
@@ -212,4 +226,4 @@ def rational_tester(model_path, notebook=False):
 
 
 if __name__ == '__main__':
-    main_random(notebook=True)
+    rational_trainer()

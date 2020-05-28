@@ -10,7 +10,8 @@ import torchvision.transforms as T
 from itertools import count
 import numpy as np
 from collections import namedtuple
-
+from pprint import pprint
+import random
 
 Experience = namedtuple(
     'Experience',
@@ -39,18 +40,19 @@ class ReplayMemory:
     def sample(self, size=1):
         if not self.can_sample(size):
             assert False, "Sample size too large to extract from replay memory"
-        return np.random.choice(list(self.q), size, replace=False)
+        return random.sample(list(self.q), size)
 
     def sample_tensors(self, size=1):
         exp_seperate = self.sample(size)
         batch_exp = Experience(*zip(*exp_seperate))
-
         s = torch.cat(batch_exp.state)
         a = torch.cat(batch_exp.action)
         r = torch.cat(batch_exp.reward)
         s_prime = torch.cat(batch_exp.next_state)
+        result = s, a, s_prime, r
+        # print("sample tensor shapes", s.shape, a.shape, s_prime.shape, r.shape)
 
-        return s, a, s_prime, r
+        return result
 
 
 class Explorer:

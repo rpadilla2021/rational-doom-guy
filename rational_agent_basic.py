@@ -35,13 +35,15 @@ def print_game_state(gameState, notebook=False):
 def preprocess_state_image(img):
     #TODO: Need to do more image preprocessing here, try to get the dimensions of the image down without loosing information
     result = np.mean(img, axis=0)
+    # Shrinking vertically
+    result = result[95:120]
+    # Shrinking horizontally
+    result = result[:, 75:250]
     result = Image.fromarray(result)
     # Do PIL Pre Proccessing here
+    
+
     result = np.array(result)
-    #Shrinking vertically
-    result = result[70:185]
-    #Shrinking horizontally
-    result = result[:,75:250]
     print("Original size ", img.shape, " to ", result.shape)
     return result
 
@@ -242,4 +244,4 @@ def rational_tester(model_path, notebook=False):
 if __name__ == '__main__':
     # rational_trainer()
     # rational_tester('rational_net_basic.model')
-    main_random(notebook=False) # Change this to true to see what the preproccessed images look like
+    main_random(notebook=True) # Change this to true to see what the preproccessed images look like

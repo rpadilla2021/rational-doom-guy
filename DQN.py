@@ -65,8 +65,12 @@ class BasicDQN(nn.Module):
 
     def select_best_action(self, state):
         with torch.no_grad():
-            result = self.forward(state).argmax(dim=1).item()  # Exploitation
-            return self.actions[result]
+            raw_vals = self.forward(state)
+            #print(raw_vals)
+            result = raw_vals.argmax(dim=1).item()  # Exploitation
+            result = self.actions[result]
+            #print(result, "\n")
+            return result
 
 
 def get_current_QVals(policy_net: BasicDQN, states: torch.Tensor, actions: torch.Tensor):

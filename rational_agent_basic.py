@@ -48,10 +48,11 @@ def main_random(notebook=False):
     game.load_config("vizdoom/scenarios/basic.cfg")
     game.init()
 
-    shoot = torch.tensor([0, 0, 1])
     left = torch.tensor([1, 0, 0])
     right = torch.tensor([0, 1, 0])
-    actions = [shoot, left, right]
+    shoot = torch.tensor([0, 0, 1])
+
+    actions = [left, right, shoot]
 
     episodes = 5
     for i in range(episodes):
@@ -77,10 +78,11 @@ def rational_trainer(notebook=False):
     game.load_config("vizdoom/scenarios/basic.cfg")
     game.init()
 
-    shoot = [0, 0, 1]
-    left = [1, 0, 0]
-    right = [0, 1, 0]
-    actions = [shoot, left, right]
+    left = torch.tensor([1, 0, 0])
+    right = torch.tensor([0, 1, 0])
+    shoot = torch.tensor([0, 0, 1])
+
+    actions = [left, right, shoot]
 
     # Step 2: Intitialize replay memory capacity
     capacity = 10000  # HYPERPARAM
@@ -98,12 +100,12 @@ def rational_trainer(notebook=False):
     target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
 
     # Step 3b: Initialize an Optimizer
-    learning_rate = 0.01  # HYPERPARAM
+    learning_rate = 0.05  # HYPERPARAM
     optimizer = optim.Adam(params=policy_nn.parameters(), lr=learning_rate)
 
     # Step 4: Iterate over episodes
-    episodes = 100
-    explorer = Explorer(1, 0.05, 0.001)
+    episodes = 250
+    explorer = Explorer(1, 0.05, 0.0001)
     time_step_ctr = 0
 
     for i in range(episodes):
@@ -116,6 +118,8 @@ def rational_trainer(notebook=False):
             initial_state = game.get_state()
             processed_s = preprocess_state_image(initial_state.screen_buffer)
 
+
+            skip_rate = 3 # Hyperparam
             if random.random() < explorer.curr_epsilon():  # Exploration
                 action_todo = random.choice(actions)
                 #print("Random Action:", action_todo)
@@ -125,7 +129,7 @@ def rational_trainer(notebook=False):
 
             # Step 7: Execute selected action in an emulator
             action_todo = list(action_todo)
-            reward_received = game.make_action(action_todo)
+            reward_received = game.make_action(action_todo, skip_rate)
             final_state = game.get_state()
 
             # Step 8 Preprocess and create expeience states
@@ -140,7 +144,7 @@ def rational_trainer(notebook=False):
             memo.push(exp)
 
             # Step 10: Sample random batch from replay memory
-            batch_size = 100
+            batch_size = 200
             loss = torch.tensor(-1)
             if memo.can_sample(batch_size):
                 states, actions, next_states, rewards = memo.sample_tensors(batch_size)
@@ -166,14 +170,17 @@ def rational_trainer(notebook=False):
 
             # Step 13: Every x timesteps, the weights of the target network are updated
             #          to be the weights of the policy network, small pertubations can be added
-            target_update_steps = 10
-            if time_step_ctr % target_update_steps == 0:
+            target_update_steps = 200
+            if time_step_ctr == target_update_steps:
+                print("Updating Target Net")
                 target_nn.load_state_dict(policy_nn.state_dict())
+                time_step_ctr = 0
 
             # update required values
             time_step_ctr += 1
             time.sleep(0.001)
         print("Episode", i)
+        print("Explorer", explorer.curr_epsilon())
         print("Result:", game.get_total_reward())
         print("Last LOSS:", loss.item())
         time.sleep(0.01)
@@ -188,10 +195,11 @@ def rational_tester(model_path, notebook=False):
     game.load_config("vizdoom/scenarios/basic.cfg")
     game.init()
 
-    shoot = [0, 0, 1]
-    left = [1, 0, 0]
-    right = [0, 1, 0]
-    actions = [shoot, left, right]
+    left = torch.tensor([1, 0, 0])
+    right = torch.tensor([0, 1, 0])
+    shoot = torch.tensor([0, 0, 1])
+
+    actions = [left, right, shoot]
 
     # Loading the policy net from model path
     game.new_episode()
@@ -212,6 +220,7 @@ def rational_tester(model_path, notebook=False):
             processed_s = preprocess_state_image(initial_state.screen_buffer)
 
             action_todo = policy_nn.select_best_action(processed_s)
+            action_todo = list(action_todo)
             reward = game.make_action(action_todo)
 
             state = game.get_state()
@@ -227,3 +236,4 @@ def rational_tester(model_path, notebook=False):
 
 if __name__ == '__main__':
     rational_trainer()
+    rational_tester('rational_net_basic.model')

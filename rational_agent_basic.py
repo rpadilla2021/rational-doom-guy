@@ -33,11 +33,12 @@ def print_game_state(gameState, notebook=False):
 
 
 def preprocess_state_image(img):
+    #TODO: Need to do more image preprocessing here, try to get the dimensions of the image down without loosing information
     result = np.mean(img, axis=0)
     result = Image.fromarray(result)
     # Do PIL Pre Proccessing here
     result = np.array(result)
-    # print("Resizing from ", img.shape, " to ", result.shape)
+    # print("Original size ", img.shape, " to ", result.shape)
     return result
 
 
@@ -219,7 +220,7 @@ def rational_tester(model_path, notebook=False):
             initial_state = game.get_state()
             processed_s = preprocess_state_image(initial_state.screen_buffer)
 
-            action_todo = policy_nn.select_best_action(processed_s)
+            action_todo = policy_nn.select_best_action(processed_s, 4)
             action_todo = list(action_todo)
             reward = game.make_action(action_todo)
 
@@ -235,5 +236,6 @@ def rational_tester(model_path, notebook=False):
 
 
 if __name__ == '__main__':
-    rational_trainer()
-    rational_tester('rational_net_basic.model')
+    # rational_trainer()
+    # rational_tester('rational_net_basic.model')
+    main_random(notebook=False) # Change this to true to see what the preproccessed images look like

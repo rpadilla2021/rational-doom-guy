@@ -13,6 +13,7 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 from itertools import count
 import matplotlib.pyplot as plt
+from matplotlib import cm
 
 
 def print_game_state(gameState, notebook=False):
@@ -26,6 +27,8 @@ def print_game_state(gameState, notebook=False):
     processed = gameState.screen_buffer
     processed = preprocess_state_image(processed)
     if notebook:
+        if len(processed.shape) == 3:
+            processed = processed.transpose((1, 2, 0))
         plt.imshow(processed, cmap='gray')
         plt.show()
     else:
@@ -34,19 +37,16 @@ def print_game_state(gameState, notebook=False):
 
 def preprocess_state_image(img):
     # TODO: Need to do more image preprocessing here, try to get the dimensions of the image down without loosing information
-    result = np.mean(img, axis=0)
-    # Shrinking vertically
-    result = result[100:115]
-    # Shrinking horizontally
-    result = result[:, 75:250]
-    height, width = result.shape
 
-    result = Image.fromarray(result)
-    # Do PIL Pre Proccessing here
-    width = (width * 4) // 5
-    height = (height * 4) // 5
-    result = result.resize((width, height), Image.ANTIALIAS)
-    result = np.array(result)
+    # Shrinking vertically
+    result = img[:, 100:116]
+
+    # Shrinking horizontally
+    result = result[:, :, 75:250]
+    # depth, height, width = result.shape
+
+    # print(result.shape)
+
     # print("Original size ", img.shape, " to ", result.shape)
     return result
 
@@ -249,6 +249,6 @@ def rational_tester(model_path, notebook=False):
 
 
 if __name__ == '__main__':
-    # rational_trainer()
+    rational_trainer()
     rational_tester('rational_net_basic.model')
     # main_random(notebook=True)  # Change this to true to see what the preproccessed images look like

@@ -13,7 +13,7 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 from itertools import count
 import matplotlib.pyplot as plt
-from matplotlib import cm
+import cv2 as cv
 
 
 def print_game_state(gameState, notebook=False):
@@ -35,19 +35,36 @@ def print_game_state(gameState, notebook=False):
         print(processed, "\n")
 
 
+def scale(im, nR, nC):
+    nR0 = len(im)  # source number of rows
+    nC0 = len(im[0])  # source number of columns
+    return [[im[int(nR0 * r / nR)][int(nC0 * c / nC)]
+             for c in range(nC)] for r in range(nR)]
+
+
+def scale_3d(im, nR, nC):
+    return np.array([scale(color, nR, nC) for color in im])
+
+
 def preprocess_state_image(img):
     # TODO: Need to do more image preprocessing here, try to get the dimensions of the image down without loosing information
 
+    result = np.mean(img, axis=0, keepdims=True)
+
     # Shrinking vertically
-    result = img[:, 100:116]
+    result = result[:, 100:116]
 
     # Shrinking horizontally
     result = result[:, :, 75:250]
-    # depth, height, width = result.shape
 
+
+    depth, height, width = result.shape
     # print(result.shape)
 
-    # print("Original size ", img.shape, " to ", result.shape)
+    result = scale_3d(result, (3 * height) // 4, (3 * width) // 4)
+
+    # print("original size: ", img.shape, "    Resized to: ", result.shape)
+
     return result
 
 
@@ -110,12 +127,12 @@ def rational_trainer(notebook=False):
     target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
 
     # Step 3b: Initialize an Optimizer
-    learning_rate = 0.03  # HYPERPARAM
+    learning_rate = 0.05  # HYPERPARAM
     optimizer = optim.Adam(params=policy_nn.parameters(), lr=learning_rate)
 
     # Step 4: Iterate over episodes
     episodes = 5000
-    explorer = Explorer(1, 0.05, 0.00009)
+    explorer = Explorer(1, 0.05, 0.00001)
     time_step_ctr = 0
 
     rawards = []

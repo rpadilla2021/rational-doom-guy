@@ -10,5 +10,9 @@ is [here](https://brew.sh/). `brew install boost --with-python` will provide wit
 Next, one needs to install the vizdoom library with `pip install vizdoom`. One will also need to install the python libraries not present in the environment using the command `pip install <library>`.
 
 ### Windows:
-1) Begin by installing python-3.6.8 onto your computer, specifically install the x86 64-bit launcher of python off of the official python website. We have noticed that some users with Anaconda installed appear to have issues even if they create a new environment with this specific version of python. Thus, it is recommended not to use Anaconda for this project.
-2)
+1) Begin by installing python-3.6.8 onto your computer, specifically install the x86 64-bit launcher of python off of the official python website [here](https://www.python.org/downloads/release/python-368/). We have noticed that some users with Anaconda installed appear to have issues even if they create a new environment with this specific version of python. Thus, it is recommended not to use Anaconda for this project.
+2)Clone this repository into whichever directory you would like on your PC. 
+3)Download the Vizdoom precompiled libraries [here](https://github.com/mwydmuch/ViZDoom/releases/tag/1.1.8pre). After succesfully downloading these precompiled dependencies, be sure to extract and move the folder 'vizdoom' into the 'Lib/site-packages' folder within your 'python36' folder within 'Program Files (x86)' folder. 
+4)When entering the cloned repo enter 'cd rational-doom-guy'. From here run 'git clone https://github.com/mwydmuch/ViZDoom'.
+5) Run 'cd vizdoom/examples/python'
+6) If running 'python basic.py' is a success, then you installed everything properly!!

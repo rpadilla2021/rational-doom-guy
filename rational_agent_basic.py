@@ -14,6 +14,9 @@ import torchvision.transforms as T
 from itertools import count
 import matplotlib.pyplot as plt
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
 def print_game_state(gameState, notebook=False):
     if not gameState:
         print("\n\n ------------------------Terminal (None) State---------------------------\n\n")
@@ -33,7 +36,7 @@ def print_game_state(gameState, notebook=False):
 
 def preprocess_state_image(img):
     # TODO: Need to do more image preprocessing here, try to get the dimensions of the image down without loosing information
-    result = np.mean(img, axis=0)
+    result = torch.mean(img, axis=0).to
     # Shrinking vertically
     result = result[100:115]
     # Shrinking horizontally
@@ -56,7 +59,6 @@ def main_random(notebook=False):
     game = DoomGame()
     game.load_config("vizdoom/scenarios/basic.cfg")
     game.init()
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     left = torch.tensor([1, 0, 0]).to(device)
     right = torch.tensor([0, 1, 0]).to(device)
     shoot = torch.tensor([0, 0, 1]).to(device)
@@ -86,7 +88,8 @@ def rational_trainer(notebook=False):
     game = DoomGame()
     game.load_config("vizdoom/scenarios/basic.cfg")
     game.init()
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+
     left = torch.tensor([1, 0, 0]).to(device)
     right = torch.tensor([0, 1, 0]).to(device)
     shoot = torch.tensor([0, 0, 1]).to(device)
@@ -206,8 +209,9 @@ def rational_tester(model_path, notebook=False):
     game = DoomGame()
     game.load_config("vizdoom/scenarios/basic.cfg")
     game.init()
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     print(device)
+
     left = torch.tensor([1, 0, 0]).to(device)
     right = torch.tensor([0, 1, 0]).to(device)
     shoot = torch.tensor([0, 0, 1]).to(device)

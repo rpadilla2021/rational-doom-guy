@@ -77,6 +77,8 @@ class BasicDQN(nn.Module):
         return t
 
     def select_best_action(self, state, show=False):
+        if len(state.shape) <= 2:
+            state = state.unsqueeze(0).to(device)
         with torch.no_grad():
             raw_vals = self.forward(state)
             if show:

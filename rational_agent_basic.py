@@ -36,20 +36,21 @@ def print_game_state(gameState, notebook=False):
 
 def preprocess_state_image(img):
     # TODO: Need to do more image preprocessing here, try to get the dimensions of the image down without loosing information
-    #result = torch.tensor(img).to_device(device)
-    result = np.mean(img, axis=0)
+    result = torch.tensor(img).to(device).float()
+    result = torch.mean(result, dim = 0)
     # Shrinking vertically
     result = result[100:115]
     # Shrinking horizontally
     result = result[:, 75:250]
     height, width = result.shape
+    # print(result.size())
 
-    result = Image.fromarray(result)
+    # result = Image.fromarray(result)
     # Do PIL Pre Proccessing here
-    width = (width * 4) // 5
-    height = (height * 4) // 5
-    result = result.resize((width, height), Image.ANTIALIAS)
-    result = np.array(result)
+    # width = (width * 4) // 5
+    # height = (height * 4) // 5
+    # result = result.resize((width, height), Image.ANTIALIAS)
+    # result = np.array(result)
     # print("Original size ", img.shape, " to ", result.shape)
     return result
 
@@ -106,7 +107,7 @@ def rational_trainer(notebook=False):
     policy_nn = BasicDQN(processed_test.shape, actions).to(device)
 
     # Step 3: Clone policy network to make target network
-    target_nn = BasicDQN(processed_test.shape, actions).to(device)
+    target_nn = BasicDQN(processed_test.shape, actions)
     target_nn.load_state_dict(policy_nn.state_dict())  # clones the weights of policy into target
     target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
 
@@ -149,13 +150,13 @@ def rational_trainer(notebook=False):
 
             # Step 8 Preprocess and create expeience states
             if final_state == None:  # We are in  a terminal state
-                processed_s_prime = np.zeros_like(processed_test)
+                processed_s_prime = torch.zeros_like(processed_test).to(device)
             else:
                 processed_s_prime = preprocess_state_image(final_state.screen_buffer)
 
-            exp = Experience(torch.from_numpy(processed_s).unsqueeze(0).to(device),
+            exp = Experience(processed_s.unsqueeze(0),
                              torch.tensor([action_todo]).to(device),
-                             torch.from_numpy(processed_s_prime).unsqueeze(0).to(device),
+                             processed_s_prime.unsqueeze(0),
                              torch.tensor([reward_received]).to(device))
 
             # Step 9: Store experience in replay memory
@@ -256,6 +257,6 @@ def rational_tester(model_path, notebook=False):
 
 
 if __name__ == '__main__':
-    rational_trainer(notebook=True)
+    rational_trainer(notebook=False)
     rational_tester('rational_net_basic.model')
     # main_random(notebook=True)  # Change this to true to see what the preproccessed images look like

@@ -14,7 +14,6 @@ import torchvision.transforms as T
 from itertools import count
 import matplotlib.pyplot as plt
 
-
 def print_game_state(gameState, notebook=False):
     if not gameState:
         print("\n\n ------------------------Terminal (None) State---------------------------\n\n")
@@ -87,11 +86,10 @@ def rational_trainer(notebook=False):
     game = DoomGame()
     game.load_config("vizdoom/scenarios/basic.cfg")
     game.init()
-
+    torch.cuda.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     left = torch.tensor([1, 0, 0])
     right = torch.tensor([0, 1, 0])
     shoot = torch.tensor([0, 0, 1])
-
     actions = [left, right, shoot]
 
     # Step 2: Intitialize replay memory capacity

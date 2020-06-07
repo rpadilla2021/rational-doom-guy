@@ -36,7 +36,7 @@ def print_game_state(gameState, notebook=False):
 
 def preprocess_state_image(img):
     # TODO: Need to do more image preprocessing here, try to get the dimensions of the image down without loosing information
-    result = torch.mean(img, axis=0).to
+    result = np.mean(img, axis=0)
     # Shrinking vertically
     result = result[100:115]
     # Shrinking horizontally
@@ -88,7 +88,6 @@ def rational_trainer(notebook=False):
     game = DoomGame()
     game.load_config("vizdoom/scenarios/basic.cfg")
     game.init()
-
 
     left = torch.tensor([1, 0, 0]).to(device)
     right = torch.tensor([0, 1, 0]).to(device)
@@ -150,8 +149,10 @@ def rational_trainer(notebook=False):
             else:
                 processed_s_prime = preprocess_state_image(final_state.screen_buffer)
 
-            exp = Experience(torch.from_numpy(processed_s).unsqueeze(0).to(device), torch.tensor([action_todo]).to(device),
-                             torch.from_numpy(processed_s_prime).unsqueeze(0).to(device), torch.tensor([reward_received]).to(device))
+            exp = Experience(torch.from_numpy(processed_s).unsqueeze(0).to(device),
+                             torch.tensor([action_todo]).to(device),
+                             torch.from_numpy(processed_s_prime).unsqueeze(0).to(device),
+                             torch.tensor([reward_received]).to(device))
 
             # Step 9: Store experience in replay memory
             memo.push(exp)

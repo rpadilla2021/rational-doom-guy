@@ -6,7 +6,7 @@ from PIL import Image
 from DataStructures import *
 from DQN import BasicDQN
 import DQN
-import torch
+import torch.cuda
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
@@ -56,10 +56,10 @@ def main_random(notebook=False):
     game = DoomGame()
     game.load_config("vizdoom/scenarios/basic.cfg")
     game.init()
-
-    left = torch.tensor([1, 0, 0])
-    right = torch.tensor([0, 1, 0])
-    shoot = torch.tensor([0, 0, 1])
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    left = torch.tensor([1, 0, 0]).to(device)
+    right = torch.tensor([0, 1, 0]).to(device)
+    shoot = torch.tensor([0, 0, 1]).to(device)
 
     actions = [left, right, shoot]
 
@@ -86,10 +86,10 @@ def rational_trainer(notebook=False):
     game = DoomGame()
     game.load_config("vizdoom/scenarios/basic.cfg")
     game.init()
-    torch.cuda.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    left = torch.tensor([1, 0, 0])
-    right = torch.tensor([0, 1, 0])
-    shoot = torch.tensor([0, 0, 1])
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    left = torch.tensor([1, 0, 0]).to(device)
+    right = torch.tensor([0, 1, 0]).to(device)
+    shoot = torch.tensor([0, 0, 1]).to(device)
     actions = [left, right, shoot]
 
     # Step 2: Intitialize replay memory capacity
@@ -100,10 +100,10 @@ def rational_trainer(notebook=False):
     game.new_episode()
     test_state = game.get_state()
     processed_test = preprocess_state_image(test_state.screen_buffer)
-    policy_nn = BasicDQN(processed_test.shape, actions)
+    policy_nn = BasicDQN(processed_test.shape, actions).to(device)
 
     # Step 3: Clone policy network to make target network
-    target_nn = BasicDQN(processed_test.shape, actions)
+    target_nn = BasicDQN(processed_test.shape, actions).to(device)
     target_nn.load_state_dict(policy_nn.state_dict())  # clones the weights of policy into target
     target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
 
@@ -147,15 +147,15 @@ def rational_trainer(notebook=False):
             else:
                 processed_s_prime = preprocess_state_image(final_state.screen_buffer)
 
-            exp = Experience(torch.from_numpy(processed_s).unsqueeze(0), torch.tensor([action_todo]),
-                             torch.from_numpy(processed_s_prime).unsqueeze(0), torch.tensor([reward_received]))
+            exp = Experience(torch.from_numpy(processed_s).unsqueeze(0).to(device), torch.tensor([action_todo]).to(device),
+                             torch.from_numpy(processed_s_prime).unsqueeze(0).to(device), torch.tensor([reward_received]).to(device))
 
             # Step 9: Store experience in replay memory
             memo.push(exp)
 
             # Step 10: Sample random batch from replay memory
             batch_size = 250
-            loss = torch.tensor(-1)
+            loss = torch.tensor(-1).to(device)
             if memo.can_sample(batch_size):
                 states, actions, next_states, rewards = memo.sample_tensors(batch_size)
 
@@ -206,11 +206,11 @@ def rational_tester(model_path, notebook=False):
     game = DoomGame()
     game.load_config("vizdoom/scenarios/basic.cfg")
     game.init()
-
-    left = torch.tensor([1, 0, 0])
-    right = torch.tensor([0, 1, 0])
-    shoot = torch.tensor([0, 0, 1])
-
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(device)
+    left = torch.tensor([1, 0, 0]).to(device)
+    right = torch.tensor([0, 1, 0]).to(device)
+    shoot = torch.tensor([0, 0, 1]).to(device)
     actions = [left, right, shoot]
 
     # Loading the policy net from model path
@@ -247,6 +247,6 @@ def rational_tester(model_path, notebook=False):
 
 
 if __name__ == '__main__':
-    # rational_trainer()
+    rational_trainer()
     rational_tester('rational_net_basic.model')
     # main_random(notebook=True)  # Change this to true to see what the preproccessed images look like

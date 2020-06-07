@@ -62,7 +62,7 @@ class BasicDQN(nn.Module):
         # TODO: Will need to update as architecture (above) changes
         if type(t) == np.ndarray:
             t = torch.from_numpy(t).unsqueeze(0).to(device)
-        t = t.unsqueeze(1).to(device)
+        t = t.unsqueeze(1)
 
         t = F.relu(self.conv1(t))
         t = self.pool1(t)
@@ -78,7 +78,7 @@ class BasicDQN(nn.Module):
 
     def select_best_action(self, state, show=False):
         if len(state.shape) <= 2:
-            state = state.unsqueeze(0).to(device)
+            state = state.unsqueeze(0)
         with torch.no_grad():
             raw_vals = self.forward(state)
             if show:

@@ -104,7 +104,7 @@ def rational_trainer(notebook=False):
     game.new_episode()
     test_state = game.get_state()
     processed_test = preprocess_state_image(test_state.screen_buffer)
-    policy_nn = BasicDQN(processed_test.shape, actions).to(device)
+    policy_nn = BasicDQN(processed_test.shape, actions)
 
     # Step 3: Clone policy network to make target network
     target_nn = BasicDQN(processed_test.shape, actions)

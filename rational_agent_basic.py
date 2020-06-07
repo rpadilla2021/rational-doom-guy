@@ -41,10 +41,10 @@ def preprocess_state_image(img):
     # Shrinking vertically
     result = result[100:115]
     # Shrinking horizontally
-    result = result[:, 75:250]
-    height, width = result.shape
+    result = result[:, 75:250].unsqueeze(0).to(device)
+    #height, width = result.shape
     # print(result.size())
-
+    result = F.interpolate(result, scale_factor = 0.8, recompute_scale_factor=True)
     # result = Image.fromarray(result)
     # Do PIL Pre Proccessing here
     # width = (width * 4) // 5
@@ -154,9 +154,9 @@ def rational_trainer(notebook=False):
             else:
                 processed_s_prime = preprocess_state_image(final_state.screen_buffer)
 
-            exp = Experience(processed_s.unsqueeze(0),
+            exp = Experience(processed_s,
                              torch.tensor([action_todo]).to(device),
-                             processed_s_prime.unsqueeze(0),
+                             processed_s_prime,
                              torch.tensor([reward_received]).to(device))
 
             # Step 9: Store experience in replay memory

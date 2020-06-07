@@ -1,6 +1,5 @@
 from vizdoom import *
 import random, time
-from pprint import pprint
 import numpy as np
 from PIL import Image
 from DataStructures import *
@@ -11,7 +10,6 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torchvision.transforms as T
-from itertools import count
 import matplotlib.pyplot as plt
 
 

@@ -266,6 +266,6 @@ def rational_tester(model_path, notebook=False):
 
 
 if __name__ == '__main__':
-    rational_trainer()
+    #rational_trainer()
     rational_tester('rational_net_basic.model')
     # main_random(notebook=True)  # Change this to true to see what the preproccessed images look like

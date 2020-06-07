@@ -36,6 +36,7 @@ def print_game_state(gameState, notebook=False):
 
 def preprocess_state_image(img):
     # TODO: Need to do more image preprocessing here, try to get the dimensions of the image down without loosing information
+    #result = torch.tensor(img).to_device(device)
     result = np.mean(img, axis=0)
     # Shrinking vertically
     result = result[100:115]
@@ -129,6 +130,9 @@ def rational_trainer(notebook=False):
             # Step 6: Select an action, either exploration or exploitation
             initial_state = game.get_state()
             processed_s = preprocess_state_image(initial_state.screen_buffer)
+
+            if notebook:
+                print_game_state(initial_state, notebook)
 
             skip_rate = 4  # Hyperparam
             if random.random() < explorer.curr_epsilon():  # Exploration
@@ -252,6 +256,6 @@ def rational_tester(model_path, notebook=False):
 
 
 if __name__ == '__main__':
-    rational_trainer()
+    rational_trainer(notebook=True)
     rational_tester('rational_net_basic.model')
     # main_random(notebook=True)  # Change this to true to see what the preproccessed images look like

@@ -1,8 +1,5 @@
 from vizdoom import *
 import random, time
-from pprint import pprint
-import numpy as np
-from PIL import Image
 from DataStructures import *
 from DQN import BasicDQN
 import DQN
@@ -44,7 +41,7 @@ def preprocess_state_image(img):
     result = result[:, 75:250].unsqueeze(0).to(device)
     #height, width = result.shape
     # print(result.size())
-    result = F.interpolate(result, scale_factor = 0.8, recompute_scale_factor=True)
+    result = F.interpolate(result, scale_factor = 0.8, recompute_scale_factor=False)
     # result = Image.fromarray(result)
     # Do PIL Pre Proccessing here
     # width = (width * 4) // 5

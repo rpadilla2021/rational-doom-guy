@@ -8,6 +8,7 @@ import numpy as np
 
 
 # Purpose of this class is to define our neural_net architecture and the methods we need to train, save, and test our NN
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class BasicDQN(nn.Module):
 
@@ -60,8 +61,8 @@ class BasicDQN(nn.Module):
     def forward(self, t):
         # TODO: Will need to update as architecture (above) changes
         if type(t) == np.ndarray:
-            t = torch.from_numpy(t).unsqueeze(0)
-        t = t.unsqueeze(1)
+            t = torch.from_numpy(t).unsqueeze(0).to(device)
+        t = t.unsqueeze(1).to(device)
 
         t = F.relu(self.conv1(t))
         t = self.pool1(t)
@@ -105,6 +106,6 @@ def get_next_QVals(target_net: BasicDQN, next_states: torch.Tensor):
     terminal_state_locs = next_states.flatten(start_dim=1).max(dim=1)[0].eq(0).type(torch.bool)
     non_terminal_state_locs = (terminal_state_locs == False)
     non_terminal_states = next_states[non_terminal_state_locs]
-    results = torch.zeros(next_states.shape[0])
+    results = torch.zeros(next_states.shape[0]).to(device)
     results[non_terminal_state_locs] = target_net.forward(non_terminal_states).max(dim=1)[0].detach()
     return results

@@ -8,6 +8,7 @@ import numpy as np
 
 
 # Purpose of this class is to define our neural_net architecture and the methods we need to train, save, and test our NN
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class BasicDQN(nn.Module):
 
@@ -21,7 +22,7 @@ class BasicDQN(nn.Module):
         print("CREATING THE NET, INPUT FEATURES", img_shape, "      OUTPUT FEATURES ", out_feats)
         self.conv1 = nn.Conv2d(1, 6, 3, stride=1)
         self.pool1 = nn.MaxPool2d((2, 2), padding=(0, 0), dilation=(1, 1))
-        self.conv2 = nn.Conv2d(6, 3, 2, stride=1)
+        self.conv2 = nn.Conv2d(6, 2, 2, stride=1)
 
         f = self.get_dim_post_conv
 
@@ -60,9 +61,9 @@ class BasicDQN(nn.Module):
     def forward(self, t):
         # TODO: Will need to update as architecture (above) changes
         if type(t) == np.ndarray:
-            t = torch.from_numpy(t).unsqueeze(0)
-        t = t.float()
-        #t = self.pool1(t)
+            t = torch.from_numpy(t).unsqueeze(0).to(device)
+        t = t.unsqueeze(1)
+
         t = F.relu(self.conv1(t))
         t = self.pool1(t)
         t = F.relu(self.conv2(t))
@@ -76,6 +77,8 @@ class BasicDQN(nn.Module):
         return t
 
     def select_best_action(self, state, show=False):
+        if len(state.shape) <= 2:
+            state = state.unsqueeze(0)
         with torch.no_grad():
             raw_vals = self.forward(state)
             if show:
@@ -90,9 +93,9 @@ class BasicDQN(nn.Module):
 
 
 def get_current_QVals(policy_net: BasicDQN, states: torch.Tensor, actions: torch.Tensor):
-    raw_outputs = policy_net(states)
+    raw_outputs = policy_net(states).to(device)
     # print("raw out shape", raw_outputs.shape)
-    actions = torch.argmax(actions, dim=1)
+    actions = torch.argmax(actions, dim=1).to(device)
     # print("index shape", actions.shape)
     result = raw_outputs.gather(dim=1, index=actions.unsqueeze(-1)).squeeze(-1)
     # print("result shape", result.shape)
@@ -105,6 +108,6 @@ def get_next_QVals(target_net: BasicDQN, next_states: torch.Tensor):
     terminal_state_locs = next_states.flatten(start_dim=1).max(dim=1)[0].eq(0).type(torch.bool)
     non_terminal_state_locs = (terminal_state_locs == False)
     non_terminal_states = next_states[non_terminal_state_locs]
-    results = torch.zeros(next_states.shape[0])
+    results = torch.zeros(next_states.shape[0]).to(device)
     results[non_terminal_state_locs] = target_net.forward(non_terminal_states).max(dim=1)[0].detach()
     return results

@@ -1,20 +1,22 @@
 from vizdoom import *
 import random, time
-from pprint import pprint
-import numpy as np
-from PIL import Image
 from DataStructures import *
 from DQN import BasicDQN
 import DQN
-import torch
+import torch.cuda
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torchvision.transforms as T
 from itertools import count
 import matplotlib.pyplot as plt
+<<<<<<< HEAD
 import cv2 as cv
 import pickle
+=======
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+>>>>>>> a806ca86291f85a303278807011ec0a91ac5b51b
 
 
 def print_game_state(gameState, notebook=False):
@@ -27,45 +29,35 @@ def print_game_state(gameState, notebook=False):
     print("Screen Buffer:", gameState.screen_buffer.shape)
     processed = gameState.screen_buffer
     processed = preprocess_state_image(processed)
+    if type(processed) == torch.Tensor:
+        processed = processed.numpy()[0]
     if notebook:
-        if len(processed.shape) == 3:
-            processed = processed.transpose((1, 2, 0))
         plt.imshow(processed, cmap='gray')
         plt.show()
     else:
         print(processed, "\n")
 
 
-def scale(im, nR, nC):
-    nR0 = len(im)  # source number of rows
-    nC0 = len(im[0])  # source number of columns
-    return [[im[int(nR0 * r / nR)][int(nC0 * c / nC)]
-             for c in range(nC)] for r in range(nR)]
-
-
-def scale_3d(im, nR, nC):
-    return np.array([scale(color, nR, nC) for color in im])
-
-
 def preprocess_state_image(img):
     # TODO: Need to do more image preprocessing here, try to get the dimensions of the image down without loosing information
+    result = torch.tensor(img).to(device).float()
 
-    result = np.mean(img, axis=0, keepdims=True)
-
+    result = torch.mean(result, dim=0)
     # Shrinking vertically
-    result = result[:, 100:116]
 
+    result = result[100:116]
     # Shrinking horizontally
-    result = result[:, :, 75:250]
 
+    result = result[:, 60:265].unsqueeze(0).unsqueeze(0).to(device)
+    # depth, height, width = result.shape
+    # scale_factor = 0.8
+    # new_height, new_width = np.floor(scale_factor*height), np.floor(scale_factor*width)
+    # print(result.size())
 
-    depth, height, width = result.shape
-    # print(result.shape)
+    result = F.interpolate(result, scale_factor=(0.9, 0.5), mode='bilinear', recompute_scale_factor=True,
+                           align_corners=True).squeeze(0)
 
-    result = scale_3d(result, (3 * height) // 4, (3 * width) // 4)
-
-    # print("original size: ", img.shape, "    Resized to: ", result.shape)
-
+    # print("Original size ", img.shape, " to ", result.shape)
     return result
 
 
@@ -75,10 +67,9 @@ def main_random(notebook=False):
     game = DoomGame()
     game.load_config("vizdoom/scenarios/basic.cfg")
     game.init()
-
-    left = torch.tensor([1, 0, 0])
-    right = torch.tensor([0, 1, 0])
-    shoot = torch.tensor([0, 0, 1])
+    left = torch.tensor([1, 0, 0]).to(device)
+    right = torch.tensor([0, 1, 0]).to(device)
+    shoot = torch.tensor([0, 0, 1]).to(device)
 
     actions = [left, right, shoot]
 
@@ -106,21 +97,20 @@ def rational_trainer(notebook=False):
     game.load_config("vizdoom/scenarios/basic.cfg")
     game.init()
 
-    left = torch.tensor([1, 0, 0])
-    right = torch.tensor([0, 1, 0])
-    shoot = torch.tensor([0, 0, 1])
-
+    left = torch.tensor([1, 0, 0]).to(device)
+    right = torch.tensor([0, 1, 0]).to(device)
+    shoot = torch.tensor([0, 0, 1]).to(device)
     actions = [left, right, shoot]
 
     # Step 2: Intitialize replay memory capacity
-    capacity = 500000  # HYPERPARAM
+    capacity = 50000  # HYPERPARAM
     memo = ReplayMemory(capacity)
 
     # Step 3: Construct and initialize policy network with random weights or weights from previous training sessions
     game.new_episode()
     test_state = game.get_state()
     processed_test = preprocess_state_image(test_state.screen_buffer)
-    policy_nn = BasicDQN(processed_test.shape, actions)
+    policy_nn = BasicDQN(processed_test.shape, actions).to(device)
 
     #pickle stuff
     with open('linearregression.pickle','wb') as f:
@@ -131,7 +121,7 @@ def rational_trainer(notebook=False):
     #end pickle
 
     # Step 3: Clone policy network to make target network
-    target_nn = BasicDQN(processed_test.shape, actions)
+    target_nn = BasicDQN(processed_test.shape, actions).to(device)
     target_nn.load_state_dict(policy_nn.state_dict())  # clones the weights of policy into target
     target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
 
@@ -144,12 +134,12 @@ def rational_trainer(notebook=False):
     #end pickle
 
     # Step 3b: Initialize an Optimizer
-    learning_rate = 0.05  # HYPERPARAM
+    learning_rate = 0.03  # HYPERPARAM
     optimizer = optim.Adam(params=policy_nn.parameters(), lr=learning_rate)
 
     # Step 4: Iterate over episodes
     episodes = 5000
-    explorer = Explorer(1, 0.05, 0.00001)
+    explorer = Explorer(1, 0.05, 0.00009)
     time_step_ctr = 0
 
     rawards = []
@@ -163,6 +153,9 @@ def rational_trainer(notebook=False):
             # Step 6: Select an action, either exploration or exploitation
             initial_state = game.get_state()
             processed_s = preprocess_state_image(initial_state.screen_buffer)
+
+            if notebook:
+                print_game_state(initial_state, notebook)
 
             skip_rate = 4  # Hyperparam
             if random.random() < explorer.curr_epsilon():  # Exploration
@@ -179,19 +172,21 @@ def rational_trainer(notebook=False):
 
             # Step 8 Preprocess and create expeience states
             if final_state == None:  # We are in  a terminal state
-                processed_s_prime = np.zeros_like(processed_test)
+                processed_s_prime = torch.zeros_like(processed_test).to(device)
             else:
                 processed_s_prime = preprocess_state_image(final_state.screen_buffer)
 
-            exp = Experience(torch.from_numpy(processed_s).unsqueeze(0), torch.tensor([action_todo]),
-                             torch.from_numpy(processed_s_prime).unsqueeze(0), torch.tensor([reward_received]))
+            exp = Experience(processed_s,
+                             torch.tensor([action_todo]).to(device),
+                             processed_s_prime,
+                             torch.tensor([reward_received]).to(device))
 
             # Step 9: Store experience in replay memory
             memo.push(exp)
 
             # Step 10: Sample random batch from replay memory
             batch_size = 250
-            loss = torch.tensor(-1)
+            loss = torch.tensor(-1).to(device)
             if memo.can_sample(batch_size):
                 states, actions, next_states, rewards = memo.sample_tensors(batch_size)
 
@@ -251,17 +246,18 @@ def rational_tester(model_path, notebook=False):
     game.load_config("vizdoom/scenarios/basic.cfg")
     game.init()
 
-    left = torch.tensor([1, 0, 0])
-    right = torch.tensor([0, 1, 0])
-    shoot = torch.tensor([0, 0, 1])
+    print(device)
 
+    left = torch.tensor([1, 0, 0]).to(device)
+    right = torch.tensor([0, 1, 0]).to(device)
+    shoot = torch.tensor([0, 0, 1]).to(device)
     actions = [left, right, shoot]
 
     # Loading the policy net from model path
     game.new_episode()
     test_state = game.get_state()
     processed_test = preprocess_state_image(test_state.screen_buffer)
-    policy_nn = BasicDQN(processed_test.shape, actions)
+    policy_nn = BasicDQN(processed_test.shape, actions).to(device)
 
     #pickle stuff
         with open('linearregression.pickle','wb') as f:
@@ -299,6 +295,6 @@ def rational_tester(model_path, notebook=False):
 
 
 if __name__ == '__main__':
-    rational_trainer()
+    rational_trainer(notebook=False)
     rational_tester('rational_net_basic.model')
     # main_random(notebook=True)  # Change this to true to see what the preproccessed images look like

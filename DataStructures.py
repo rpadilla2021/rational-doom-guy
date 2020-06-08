@@ -14,6 +14,8 @@ from pprint import pprint
 import random
 import matplotlib.pyplot as plt
 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 Experience = namedtuple(
     'Experience',
     ('state', 'action', 'next_state', 'reward')
@@ -46,10 +48,10 @@ class ReplayMemory:
     def sample_tensors(self, size=1):
         exp_seperate = self.sample(size)
         batch_exp = Experience(*zip(*exp_seperate))
-        s = torch.cat(batch_exp.state)
-        a = torch.cat(batch_exp.action)
-        r = torch.cat(batch_exp.reward)
-        s_prime = torch.cat(batch_exp.next_state)
+        s = torch.cat(batch_exp.state).to(device)
+        a = torch.cat(batch_exp.action).to(device)
+        r = torch.cat(batch_exp.reward).to(device)
+        s_prime = torch.cat(batch_exp.next_state).to(device)
         result = s, a, s_prime, r
         # print("sample tensor shapes", s.shape, a.shape, s_prime.shape, r.shape)
 
@@ -71,7 +73,7 @@ class Explorer:
 
 
 def moving_average(arr, period):
-    #arr = np.array(arr)
+    # arr = np.array(arr)
     result = np.convolve(arr, np.ones(period), 'valid') / period
     return result
 

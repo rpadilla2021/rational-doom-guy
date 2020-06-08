@@ -107,11 +107,11 @@ def rational_trainer(notebook=False):
     policy_nn = BasicDQN(processed_test.shape, actions).to(device)
 
     #pickle stuff
-    # with open('linearregression.pickle','wb') as f:
-    #     pickle.dump(policy_nn, f)
-    #
-    # with open('linearregression.pickle','rb') as f:
-    #     policy_nn = pickle.load(f)
+    with open('linearregression.pickle','wb') as f:
+        pickle.dump(policy_nn, f)
+
+    with open('linearregression.pickle','rb') as f:
+        policy_nn = pickle.load(f)
     #end pickle
 
     # Step 3: Clone policy network to make target network
@@ -120,11 +120,11 @@ def rational_trainer(notebook=False):
     target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
 
     #pickle stuff
-    # with open('targetdata.pickle','wb') as f:
-    #     pickle.dump(target_nn, f)
-    #
-    # with open('targetdata.pickle','rb') as f:
-    #     target_nn = pickle.load(f)
+    with open('targetdata.pickle','wb') as f:
+        pickle.dump(target_nn, f)
+
+    with open('targetdata.pickle','rb') as f:
+        target_nn = pickle.load(f)
     #end pickle
 
     # Step 3b: Initialize an Optimizer
@@ -192,14 +192,6 @@ def rational_trainer(notebook=False):
                 gamma_discount = 0.99  # HYPERPARAM
                 next_q_vals = DQN.get_next_QVals(target_nn, next_states)
                 target_q_vals = rewards + gamma_discount * next_q_vals
-
-                #pickle stuff
-                # with open('targetdata.pickle','wb') as f:
-                #     pickle.dump(target_nn, f)
-                #
-                # with open('targetdata.pickle','rb') as f:
-                #     target_nn = pickle.load(f)
-                #end pickle
 
                 # Step 11c: Calculate MSE (or any other) Loss between output and target values
                 loss = F.mse_loss(pred_q_vals, target_q_vals)  # replace the nones

@@ -24,6 +24,8 @@ def print_game_state(gameState, notebook=False):
     print("Screen Buffer:", gameState.screen_buffer.shape)
     processed = gameState.screen_buffer
     processed = preprocess_state_image(processed)
+    if type(processed) == torch.Tensor:
+        processed = processed.numpy()[0]
     if notebook:
         plt.imshow(processed, cmap='gray')
         plt.show()
@@ -34,20 +36,22 @@ def print_game_state(gameState, notebook=False):
 def preprocess_state_image(img):
     # TODO: Need to do more image preprocessing here, try to get the dimensions of the image down without loosing information
     result = torch.tensor(img).to(device).float()
-    result = torch.mean(result, dim = 0)
+
+    result = torch.mean(result, dim=0)
     # Shrinking vertically
-    result = result[100:115]
+
+    result = result[100:116]
     # Shrinking horizontally
-    result = result[:, 75:250].unsqueeze(0).to(device)
-    #height, width = result.shape
+
+    result = result[:, 60:265].unsqueeze(0).unsqueeze(0).to(device)
+    # depth, height, width = result.shape
+    # scale_factor = 0.8
+    # new_height, new_width = np.floor(scale_factor*height), np.floor(scale_factor*width)
     # print(result.size())
-    result = F.interpolate(result, scale_factor = 0.8, recompute_scale_factor=False)
-    # result = Image.fromarray(result)
-    # Do PIL Pre Proccessing here
-    # width = (width * 4) // 5
-    # height = (height * 4) // 5
-    # result = result.resize((width, height), Image.ANTIALIAS)
-    # result = np.array(result)
+
+    result = F.interpolate(result, scale_factor=(0.9, 0.5), mode='bilinear', recompute_scale_factor=True,
+                           align_corners=True).squeeze(0)
+
     # print("Original size ", img.shape, " to ", result.shape)
     return result
 
@@ -94,7 +98,7 @@ def rational_trainer(notebook=False):
     actions = [left, right, shoot]
 
     # Step 2: Intitialize replay memory capacity
-    capacity = 500000  # HYPERPARAM
+    capacity = 50000  # HYPERPARAM
     memo = ReplayMemory(capacity)
 
     # Step 3: Construct and initialize policy network with random weights or weights from previous training sessions

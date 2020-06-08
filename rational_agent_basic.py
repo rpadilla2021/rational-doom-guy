@@ -105,10 +105,10 @@ def rational_trainer(notebook=False):
     game.new_episode()
     test_state = game.get_state()
     processed_test = preprocess_state_image(test_state.screen_buffer)
-    policy_nn = BasicDQN(processed_test.shape, actions)
+    policy_nn = BasicDQN(processed_test.shape, actions).to(device)
 
     # Step 3: Clone policy network to make target network
-    target_nn = BasicDQN(processed_test.shape, actions)
+    target_nn = BasicDQN(processed_test.shape, actions).to(device)
     target_nn.load_state_dict(policy_nn.state_dict())  # clones the weights of policy into target
     target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
 
@@ -228,7 +228,7 @@ def rational_tester(model_path, notebook=False):
     game.new_episode()
     test_state = game.get_state()
     processed_test = preprocess_state_image(test_state.screen_buffer)
-    policy_nn = BasicDQN(processed_test.shape, actions)
+    policy_nn = BasicDQN(processed_test.shape, actions).to(device)
 
     policy_nn.load_state_dict(torch.load(model_path))
     policy_nn.eval()

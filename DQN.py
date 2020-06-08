@@ -93,9 +93,9 @@ class BasicDQN(nn.Module):
 
 
 def get_current_QVals(policy_net: BasicDQN, states: torch.Tensor, actions: torch.Tensor):
-    raw_outputs = policy_net(states)
+    raw_outputs = policy_net(states).to(device)
     # print("raw out shape", raw_outputs.shape)
-    actions = torch.argmax(actions, dim=1)
+    actions = torch.argmax(actions, dim=1).to(device)
     # print("index shape", actions.shape)
     result = raw_outputs.gather(dim=1, index=actions.unsqueeze(-1)).squeeze(-1)
     # print("result shape", result.shape)

@@ -10,14 +10,10 @@ import torch.nn.functional as F
 import torchvision.transforms as T
 from itertools import count
 import matplotlib.pyplot as plt
-<<<<<<< HEAD
 import cv2 as cv
 import pickle
-=======
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
->>>>>>> a806ca86291f85a303278807011ec0a91ac5b51b
-
 
 def print_game_state(gameState, notebook=False):
     if not gameState:

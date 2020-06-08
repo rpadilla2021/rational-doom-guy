@@ -14,6 +14,7 @@ import torchvision.transforms as T
 from itertools import count
 import matplotlib.pyplot as plt
 import cv2 as cv
+import pickle
 
 
 def print_game_state(gameState, notebook=False):
@@ -121,10 +122,26 @@ def rational_trainer(notebook=False):
     processed_test = preprocess_state_image(test_state.screen_buffer)
     policy_nn = BasicDQN(processed_test.shape, actions)
 
+    #pickle stuff
+    with open('linearregression.pickle','wb') as f:
+        pickle.dump(policy_nn, f)
+
+    with open('linearregression.pickle','rb') as f:
+        policy_nn = pickle.load(f)
+    #end pickle
+
     # Step 3: Clone policy network to make target network
     target_nn = BasicDQN(processed_test.shape, actions)
     target_nn.load_state_dict(policy_nn.state_dict())  # clones the weights of policy into target
     target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
+
+    #pickle stuff
+        with open('targetdata.pickle','wb') as f:
+            pickle.dump(target_nn, f)
+
+        with open('targetdata.pickle','rb') as f:
+            target_nn = pickle.load(f)
+    #end pickle
 
     # Step 3b: Initialize an Optimizer
     learning_rate = 0.05  # HYPERPARAM
@@ -187,6 +204,14 @@ def rational_trainer(notebook=False):
                 next_q_vals = DQN.get_next_QVals(target_nn, next_states)
                 target_q_vals = rewards + gamma_discount * next_q_vals
 
+                #pickle stuff
+                        with open('targetdata.pickle','wb') as f:
+                            pickle.dump(target_nn, f)
+
+                        with open('targetdata.pickle','rb') as f:
+                            target_nn = pickle.load(f)
+                #end pickle
+
                 # Step 11c: Calculate MSE (or any other) Loss between output and target values
                 loss = F.mse_loss(pred_q_vals, target_q_vals)  # replace the nones
                 # print("LOSS: ", loss.item())
@@ -237,6 +262,14 @@ def rational_tester(model_path, notebook=False):
     test_state = game.get_state()
     processed_test = preprocess_state_image(test_state.screen_buffer)
     policy_nn = BasicDQN(processed_test.shape, actions)
+
+    #pickle stuff
+        with open('linearregression.pickle','wb') as f:
+            pickle.dump(policy_nn, f)
+
+        with open('linearregression.pickle','rb') as f:
+            policy_nn = pickle.load(f)
+    #end pickle
 
     policy_nn.load_state_dict(torch.load(model_path))
     policy_nn.eval()

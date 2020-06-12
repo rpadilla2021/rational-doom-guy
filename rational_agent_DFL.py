@@ -23,7 +23,7 @@ def print_game_state(gameState, notebook=False):
     processed = gameState.screen_buffer
     processed = preprocess_state_image(processed)
     if type(processed) == torch.Tensor:
-        processed = processed.numpy()[0]
+        processed = processed.cpu().numpy()[0][0]
     if notebook:
         plt.imshow(processed, cmap='gray')
         plt.show()
@@ -37,18 +37,14 @@ def preprocess_state_image(img):
 
     result = torch.mean(result, dim=0)
     # Shrinking vertically
+    result = result[95:125]
 
-    result = result[100:116]
     # Shrinking horizontally
-
-    result = result[:, 60:265].unsqueeze(0).unsqueeze(0).to(device)
+    result = result[:, 75:250].unsqueeze(0).to(device)
     # depth, height, width = result.shape
     # scale_factor = 0.8
     # new_height, new_width = np.floor(scale_factor*height), np.floor(scale_factor*width)
     # print(result.size())
-
-    result = F.interpolate(result, scale_factor=(0.9, 0.5), mode='bilinear', recompute_scale_factor=True,
-                           align_corners=True).squeeze(0)
 
     # print("Original size ", img.shape, " to ", result.shape)
     return result
@@ -58,7 +54,7 @@ def main_random(notebook=False):
     # Step 1: Initialize game enviornment
 
     game = DoomGame()
-    game.load_config("vizdoom/scenarios/basic.cfg")
+    game.load_config("vizdoom/scenarios/defend_the_line.cfg")
     game.init()
     left = torch.tensor([1, 0, 0]).to(device)
     right = torch.tensor([0, 1, 0]).to(device)
@@ -96,7 +92,7 @@ def rational_trainer(notebook=False):
     actions = [left, right, shoot]
 
     # Step 2: Intitialize replay memory capacity
-    capacity = 50000  # HYPERPARAM
+    capacity = 10000  # HYPERPARAM
     memo = ReplayMemory(capacity)
 
     # Step 3: Construct and initialize policy network with random weights or weights from previous training sessions
@@ -112,11 +108,11 @@ def rational_trainer(notebook=False):
 
 
     # Step 3b: Initialize an Optimizer
-    learning_rate = 0.03  # HYPERPARAM
+    learning_rate = 0.1  # HYPERPARAM
     optimizer = optim.Adam(params=policy_nn.parameters(), lr=learning_rate)
 
     # Step 4: Iterate over episodes
-    episodes = 5000
+    episodes = 1000
     explorer = Explorer(1, 0.05, 0.00009)
     time_step_ctr = 0
 
@@ -163,7 +159,7 @@ def rational_trainer(notebook=False):
             memo.push(exp)
 
             # Step 10: Sample random batch from replay memory
-            batch_size = 250
+            batch_size = 100
             loss = torch.tensor(-1).to(device)
             if memo.can_sample(batch_size):
                 states, actions, next_states, rewards = memo.sample_tensors(batch_size)
@@ -260,4 +256,4 @@ def rational_tester(model_path, notebook=False):
 if __name__ == '__main__':
     rational_trainer(notebook=False)
     rational_tester('rational_net_basic.model')
-    # main_random(notebook=True)  # Change this to true to see what the preproccessed images look like
+    #main_random(notebook=True)  # Change this to true to see what the preproccessed images look like

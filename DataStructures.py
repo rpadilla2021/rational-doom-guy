@@ -74,6 +74,8 @@ class Explorer:
 
 def moving_average(arr, period):
     # arr = np.array(arr)
+    if len(arr) < period:
+        return np.cumsum(arr)/(np.arange(1, len(arr)+1))
     result = np.convolve(arr, np.ones(period), 'valid') / period
     return result
 
@@ -83,4 +85,4 @@ def plot(arr, ma_period):
     y = moving_average(arr, ma_period)
     plt.plot(y)
     plt.draw()
-    plt.pause(0.0001)
+    plt.pause(0.00001)

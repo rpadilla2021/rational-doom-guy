@@ -260,7 +260,8 @@ def rational_tester(model_path, notebook=False):
     for i in range(episodes):
         game.new_episode()
         state = game.get_state()
-        print_game_state(state, notebook)
+        if notebook:
+            print_game_state(state, notebook)
         while not game.is_episode_finished():
             initial_state = game.get_state()
             processed_s = preprocess_state_image(initial_state.screen_buffer)

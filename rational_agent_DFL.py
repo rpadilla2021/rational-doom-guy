@@ -9,7 +9,6 @@ import torch.optim as optim
 import torch.nn.functional as F
 import torchvision.transforms as T
 import matplotlib.pyplot as plt
-import pickle
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -88,7 +87,7 @@ def main_random(notebook=False):
 def rational_trainer(notebook=False):
     # Step 1: Initialize game enviornment
     game = DoomGame()
-    game.load_config("vizdoom/scenarios/basic.cfg")
+    game.load_config("vizdoom/scenarios/defend_the_line.cfg")
     game.init()
 
     left = torch.tensor([1, 0, 0]).to(device)
@@ -208,13 +207,13 @@ def rational_trainer(notebook=False):
         time.sleep(0.005)
 
     # Step 14: Save NN weights to a file so that it can later be read for testing the agent
-    torch.save(policy_nn.state_dict(), 'rational_net_DFC.model')
+    torch.save(policy_nn.state_dict(), 'rational_net_DFL.model')
 
 
 def rational_tester(model_path, notebook=False):
     # Initialize game enviornment
     game = DoomGame()
-    game.load_config("vizdoom/scenarios/basic.cfg")
+    game.load_config("vizdoom/scenarios/defend_the_line.cfg")
     game.init()
 
     print(device)

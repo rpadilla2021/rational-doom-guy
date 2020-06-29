@@ -6,9 +6,9 @@ import torchvision.transforms as T
 from itertools import count
 import numpy as np
 
-
 # Purpose of this class is to define our neural_net architecture and the methods we need to train, save, and test our NN
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 class BasicDQN(nn.Module):
 
@@ -44,10 +44,12 @@ class BasicDQN(nn.Module):
         in_channels, h_in, w_in = img_shape
 
         assert img_shape[0] == in_channels
-        #print(conv_layer.padding)
-        h_out = (h_in + 2 * conv_layer.padding[0] - conv_layer.dilation[0] * (conv_layer.kernel_size[0] - 1) - 1)/ conv_layer.stride[0] + 1
-        w_out = (w_in + 2 * conv_layer.padding[1] - conv_layer.dilation[1] * (conv_layer.kernel_size[1] - 1) - 1)/conv_layer.stride[1] + 1
-        #print(h_out, w_out)
+        # print(conv_layer.padding)
+        h_out = (h_in + 2 * conv_layer.padding[0] - conv_layer.dilation[0] * (conv_layer.kernel_size[0] - 1) - 1) / \
+                conv_layer.stride[0] + 1
+        w_out = (w_in + 2 * conv_layer.padding[1] - conv_layer.dilation[1] * (conv_layer.kernel_size[1] - 1) - 1) / \
+                conv_layer.stride[1] + 1
+        # print(h_out, w_out)
         h_out, w_out = int(np.floor(h_out)), int(np.floor(w_out))
 
         if not hasattr(conv_layer, 'out_channels'):
@@ -55,7 +57,7 @@ class BasicDQN(nn.Module):
         else:
             result = conv_layer.out_channels, h_out, w_out
 
-        #print(result)
+        # print(result)
         return result
 
     def forward(self, t):
@@ -90,6 +92,15 @@ class BasicDQN(nn.Module):
             if show:
                 print(result, "\n")
             return result
+
+
+class GeneralizedDQN(nn.Module):
+    def __init__(self, img_shape):
+        super().__init__()
+        self.in_shape = img_shape
+
+        self.actions = ['ATTACK', 'MOVE_LEFT', 'MOVE_RIGHT', 'MOVE_FORWARD', 'MOVE_BACKWARD', 'TURN_LEFT', 'TURN_RIGHT',
+                        'USE', 'SELECT_NEXT_WEAPON ', 'SELECT_PREV_WEAPON']
 
 
 def get_current_QVals(policy_net: BasicDQN, states: torch.Tensor, actions: torch.Tensor):

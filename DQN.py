@@ -18,7 +18,6 @@ class BasicDQN(nn.Module):
 
         self.actions = output_actions
         out_feats = len(output_actions)
-        # TODO: Finalize and implement final NN aritcheture to calculate q values
         print("CREATING THE NET, INPUT FEATURES", img_shape, "      OUTPUT FEATURES ", out_feats)
         self.conv1 = nn.Conv2d(1, 6, 3, stride=1)
         self.pool1 = nn.MaxPool2d((2, 2), padding=(0, 0), dilation=(1, 1))
@@ -101,9 +100,34 @@ class GeneralizedDQN(nn.Module):
 
         self.actions = ['ATTACK', 'MOVE_LEFT', 'MOVE_RIGHT', 'MOVE_FORWARD', 'MOVE_BACKWARD', 'TURN_LEFT', 'TURN_RIGHT',
                         'USE', 'SELECT_NEXT_WEAPON ', 'SELECT_PREV_WEAPON']
+        out_feats = len(output_actions)
+
+        # TODO: Finalize and implement final NN aritcheture to calculate q values
+
+    def forward(self, t):
+        # TODO: Will need to update as architecture (above) changes
+        if type(t) == np.ndarray:
+            t = torch.from_numpy(t).unsqueeze(0).to(device)
+        t = t.unsqueeze(1)
+
+        return t
+
+    def select_best_action(self, state, show=False):
+        if len(state.shape) <= 2:
+            state = state.unsqueeze(0)
+        with torch.no_grad():
+            raw_vals = self.forward(state)
+            if show:
+                print(raw_vals)
+
+            result = raw_vals.argmax(dim=1).item()  # Exploitation
+            result = self.actions[result]
+            if show:
+                print(result, "\n")
+            return result
 
 
-def get_current_QVals(policy_net: BasicDQN, states: torch.Tensor, actions: torch.Tensor):
+def get_current_QVals(policy_net, states: torch.Tensor, actions: torch.Tensor):
     raw_outputs = policy_net(states).to(device)
     # print("raw out shape", raw_outputs.shape)
     actions = torch.argmax(actions, dim=1).to(device)
@@ -114,7 +138,7 @@ def get_current_QVals(policy_net: BasicDQN, states: torch.Tensor, actions: torch
     return result
 
 
-def get_next_QVals(target_net: BasicDQN, next_states: torch.Tensor):
+def get_next_QVals(target_net, next_states: torch.Tensor):
     # TODO: get next q-values
     terminal_state_locs = next_states.flatten(start_dim=1).max(dim=1)[0].eq(0).type(torch.bool)
     non_terminal_state_locs = (terminal_state_locs == False)

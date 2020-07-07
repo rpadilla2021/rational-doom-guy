@@ -37,48 +37,10 @@ def preprocess_state_image(img):
     result = torch.mean(result, dim=0)
 
     result = result.unsqueeze(0).unsqueeze(0).to(device)
-    # depth, height, width = result.shape
-    # scale_factor = 0.8
-    # new_height, new_width = np.floor(scale_factor*height), np.floor(scale_factor*width)
-    # print(result.size())
 
     result = F.interpolate(result, scale_factor=(0.9, 0.5), mode='bilinear', recompute_scale_factor=True,
                            align_corners=True).squeeze(0)
-
-    # print("Original size ", img.shape, " to ", result.shape)
     return result
-
-
-def main_random(notebook=False):
-    # Step 1: Initialize game enviornment
-
-    game = DoomGame()
-    game.load_config("vizdoom/scenarios/health_gathering.cfg")
-    game.init()
-    left = torch.tensor([1, 0, 0, 0, 0]).to(device)
-    right = torch.tensor([0, 1, 0,0, 0]).to(device)
-    shoot = torch.tensor([0, 0, 1, 0, 0]).to(device)
-    straight = torch.tensor([0, 0, 0, 1, 0]).to(device)
-    back = torch.tensor([0, 0, 0, 0, 1]).to(device)
-    actions = [left, right, shoot,straight,back]
-
-    episodes = 5
-    for i in range(episodes):
-        game.new_episode()
-        state = game.get_state()
-        print_game_state(state, notebook)
-        while not game.is_episode_finished():
-            # state = game.get_state()
-            # print_game_state(state, notebook)
-            action_todo = list(random.choice(actions))
-            reward = game.make_action(action_todo)
-            state = game.get_state()
-            print_game_state(state, notebook)
-            print("\treward:", reward)
-            time.sleep(0.01)
-        print("Result:", game.get_total_reward())
-        time.sleep(1)
-
 
 def rational_trainer(notebook=False):
     # Step 1: Initialize game enviornment
@@ -111,7 +73,7 @@ def rational_trainer(notebook=False):
 
 
     # Step 3b: Initialize an Optimizer
-    learning_rate = 0.03  # HYPERPARAM
+    learning_rate = 0.4  # HYPERPARAM
     optimizer = optim.Adam(params=policy_nn.parameters(), lr=learning_rate)
 
     # Step 4: Iterate over episodes
@@ -162,7 +124,7 @@ def rational_trainer(notebook=False):
             memo.push(exp)
 
             # Step 10: Sample random batch from replay memory
-            batch_size = 250
+            batch_size = 500
             loss = torch.tensor(-1).to(device)
             if memo.can_sample(batch_size):
                 states, actions, next_states, rewards = memo.sample_tensors(batch_size)
@@ -172,7 +134,7 @@ def rational_trainer(notebook=False):
 
                 # Step 11b: Calculate target Q values. Pass successor states for each action through the target network
                 #           use bellman equation to calculate target value
-                gamma_discount = 0.99  # HYPERPARAM
+                gamma_discount = 0.999  # HYPERPARAM
                 next_q_vals = DQN.get_next_QVals(target_nn, next_states)
                 target_q_vals = rewards + gamma_discount * next_q_vals
 
@@ -264,4 +226,3 @@ def rational_tester(model_path, notebook=False):
 if __name__ == '__main__':
     rational_trainer(notebook=False)
     rational_tester('rational_net_basic.model')
-    # main_random(notebook=True)  # Change this to true to see what the preproccessed images look like

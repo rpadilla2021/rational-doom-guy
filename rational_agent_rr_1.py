@@ -32,16 +32,11 @@ def print_game_state(gameState, notebook=False):
 
 
 def preprocess_state_image(img):
-    # TODO: Need to do more image preprocessing here, try to get the dimensions of the image down without loosing information
     result = torch.tensor(img).to(device).float()
 
     result = torch.mean(result, dim=0)
-    # Shrinking vertically
 
-    result = result[100:116]
-    # Shrinking horizontally
-
-    result = result[:, 60:265].unsqueeze(0).unsqueeze(0).to(device)
+    result = result.unsqueeze(0).unsqueeze(0).to(device)
     # depth, height, width = result.shape
     # scale_factor = 0.8
     # new_height, new_width = np.floor(scale_factor*height), np.floor(scale_factor*width)
@@ -58,13 +53,14 @@ def main_random(notebook=False):
     # Step 1: Initialize game enviornment
 
     game = DoomGame()
-    game.load_config("vizdoom/scenarios/simpler_basic.cfg")
+    game.load_config("vizdoom/scenarios/health_gathering.cfg")
     game.init()
-    """left = torch.tensor([1, 0, 0]).to(device)
-    right = torch.tensor([0, 1, 0]).to(device)
-    shoot = torch.tensor([0, 0, 1]).to(device)
-
-    actions = [left, right, shoot]
+    left = torch.tensor([1, 0, 0, 0, 0]).to(device)
+    right = torch.tensor([0, 1, 0,0, 0]).to(device)
+    shoot = torch.tensor([0, 0, 1, 0, 0]).to(device)
+    straight = torch.tensor([0, 0, 0, 1, 0]).to(device)
+    back = torch.tensor([0, 0, 0, 0, 1]).to(device)
+    actions = [left, right, shoot,straight,back]
 
     episodes = 5
     for i in range(episodes):
@@ -81,22 +77,25 @@ def main_random(notebook=False):
             print("\treward:", reward)
             time.sleep(0.01)
         print("Result:", game.get_total_reward())
-        time.sleep(1)"""
+        time.sleep(1)
 
 
 def rational_trainer(notebook=False):
     # Step 1: Initialize game enviornment
     game = DoomGame()
-    game.load_config("vizdoom/scenarios/my_way_home.cfg")
+    game.load_config("vizdoom/scenarios/health_gathering.cfg")
     game.init()
 
-    left = torch.tensor([1, 0, 0]).to(device)
-    right = torch.tensor([0, 1, 0]).to(device)
-    shoot = torch.tensor([0, 0, 1]).to(device)
-    actions = [left, right, shoot]
+    left = torch.tensor([1, 0, 0, 0, 0]).to(device)
+    right = torch.tensor([0, 1, 0, 0, 0]).to(device)
+    shoot = torch.tensor([0, 0, 1, 0, 0]).to(device)
+    straight = torch.tensor([0, 0, 0, 1, 0]).to(device)
+    back = torch.tensor([0, 0, 0, 0, 1]).to(device)
+
+    actions = [left, right, shoot, straight, back]
 
     # Step 2: Intitialize replay memory capacity
-    capacity = 50000  # HYPERPARAM
+    capacity = 60000 # HYPERPARAM
     memo = ReplayMemory(capacity)
 
     # Step 3: Construct and initialize policy network with random weights or weights from previous training sessions
@@ -105,26 +104,11 @@ def rational_trainer(notebook=False):
     processed_test = preprocess_state_image(test_state.screen_buffer)
     policy_nn = BasicDQN(processed_test.shape, actions).to(device)
 
-    #pickle stuff
-    with open('linearregression.pickle','wb') as f:
-        pickle.dump(policy_nn, f)
-
-    with open('linearregression.pickle','rb') as f:
-        policy_nn = pickle.load(f)
-    #end pickle
-
     # Step 3: Clone policy network to make target network
     target_nn = BasicDQN(processed_test.shape, actions).to(device)
     target_nn.load_state_dict(policy_nn.state_dict())  # clones the weights of policy into target
     target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
 
-    #pickle stuff
-    with open('targetdata.pickle','wb') as f:
-        pickle.dump(target_nn, f)
-
-    with open('targetdata.pickle','rb') as f:
-        target_nn = pickle.load(f)
-    #end pickle
 
     # Step 3b: Initialize an Optimizer
     learning_rate = 0.03  # HYPERPARAM
@@ -230,14 +214,11 @@ def rational_tester(model_path, notebook=False):
     game = DoomGame()
     game.load_config("vizdoom/scenarios/deadly_corridor.cfg")
     game.init()
-
-    """"print(device)
-
+    print(device)
     left = torch.tensor([1, 0, 0]).to(device)
     right = torch.tensor([0, 1, 0]).to(device)
-    shoot = torch.tensor([0, 0, 1]).to(device)
-    actions = [left, right, shoot]
-
+    straight = torch.tensor([0, 0, 1]).to(device)
+    actions = [left, right, straight]
     # Loading the policy net from model path
     game.new_episode()
     test_state = game.get_state()
@@ -277,7 +258,7 @@ def rational_tester(model_path, notebook=False):
             time.sleep(0.05)
 
         print("Result:", game.get_total_reward())
-        time.sleep(1)"""
+        time.sleep(1)
 
 
 if __name__ == '__main__':

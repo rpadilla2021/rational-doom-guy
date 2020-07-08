@@ -23,7 +23,7 @@ def print_game_state(gameState, notebook=False):
     processed = gameState.screen_buffer
     processed = preprocess_state_image(processed)
     if type(processed) == torch.Tensor:
-        processed = processed.numpy()[0]
+        processed = processed.cpu().numpy()[0]
     if notebook:
         plt.imshow(processed, cmap='gray')
         plt.show()
@@ -36,11 +36,40 @@ def preprocess_state_image(img):
 
     result = torch.mean(result, dim=0)
 
-    result = result.unsqueeze(0).unsqueeze(0).to(device)
+    result = result[75:200,75:200].unsqueeze(0).unsqueeze(0).to(device)
 
     result = F.interpolate(result, scale_factor=(0.9, 0.5), mode='bilinear', recompute_scale_factor=True,
                            align_corners=True).squeeze(0)
     return result
+
+def main_random(notebook=False):
+    # Step 1: Initialize game enviornment
+
+    game = DoomGame()
+    game.load_config("vizdoom/scenarios/health_gathering.cfg")
+    game.init()
+    left = torch.tensor([1, 0, 0]).to(device)
+    right = torch.tensor([0, 1, 0]).to(device)
+    straight = torch.tensor([0, 0, 1]).to(device)
+
+    actions = [left, right, straight]
+
+    episodes = 5
+    for i in range(episodes):
+        game.new_episode()
+        state = game.get_state()
+        print_game_state(state, notebook)
+        while not game.is_episode_finished():
+            # state = game.get_state()
+            # print_game_state(state, notebook)
+            action_todo = list(random.choice(actions))
+            reward = game.make_action(action_todo)
+            state = game.get_state()
+            print_game_state(state, notebook)
+            print("\treward:", reward)
+            time.sleep(0.01)
+        print("Result:", game.get_total_reward())
+        time.sleep(1)
 
 def rational_trainer(notebook=False):
     # Step 1: Initialize game enviornment
@@ -48,16 +77,14 @@ def rational_trainer(notebook=False):
     game.load_config("vizdoom/scenarios/health_gathering.cfg")
     game.init()
 
-    left = torch.tensor([1, 0, 0, 0, 0]).to(device)
-    right = torch.tensor([0, 1, 0, 0, 0]).to(device)
-    shoot = torch.tensor([0, 0, 1, 0, 0]).to(device)
-    straight = torch.tensor([0, 0, 0, 1, 0]).to(device)
-    back = torch.tensor([0, 0, 0, 0, 1]).to(device)
+    left = torch.tensor([1, 0, 0]).to(device)
+    right = torch.tensor([0, 1, 0]).to(device)
+    straight = torch.tensor([0, 0, 1]).to(device)
 
-    actions = [left, right, shoot, straight, back]
+    actions = [left, right, straight]
 
     # Step 2: Intitialize replay memory capacity
-    capacity = 60000 # HYPERPARAM
+    capacity = 10000 # HYPERPARAM
     memo = ReplayMemory(capacity)
 
     # Step 3: Construct and initialize policy network with random weights or weights from previous training sessions
@@ -73,11 +100,11 @@ def rational_trainer(notebook=False):
 
 
     # Step 3b: Initialize an Optimizer
-    learning_rate = 0.4  # HYPERPARAM
+    learning_rate = 0.25  # HYPERPARAM
     optimizer = optim.Adam(params=policy_nn.parameters(), lr=learning_rate)
 
     # Step 4: Iterate over episodes
-    episodes = 5000
+    episodes = 2000
     explorer = Explorer(1, 0.05, 0.00009)
     time_step_ctr = 0
 
@@ -166,6 +193,7 @@ def rational_trainer(notebook=False):
         rawards.append(final_reward)
         plot(rawards, 100)
         time.sleep(0.005)
+        torch.cuda.empty_cache()
 
     # Step 14: Save NN weights to a file so that it can later be read for testing the agent
     torch.save(policy_nn.state_dict(), 'rational_net_basic.model')
@@ -225,4 +253,4 @@ def rational_tester(model_path, notebook=False):
 
 if __name__ == '__main__':
     rational_trainer(notebook=False)
-    rational_tester('rational_net_basic.model')
+    #main_random(notebook=True)

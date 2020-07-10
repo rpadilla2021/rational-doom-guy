@@ -39,14 +39,25 @@ def preprocess_state_image(img):
 
 
 def get_action_dict(config_file_path):
-    # TODO: Make an actual way to read the .cfg file
-    #  create a dictionary map of the Move Names to their appropriate array representation
-    left = torch.tensor([1, 0, 0]).to(device)
-    right = torch.tensor([0, 1, 0]).to(device)
-    shoot = torch.tensor([0, 0, 1]).to(device)
+    actions = get_actions_from_file(config_file_path)
+    encodings = []
+    for i in range(len(actions)):
+        code = torch.zeros(len(actions)).to(device)
+        code[i] = 1
+        encodings.append(code)
 
-    actions = {'MOVE_LEFT': left, 'MOVE_RIGHT': right, 'ATTACK': shoot}
-    return actions
+    allowed_actions = DQN.GeneralizedDQN.actions
+    actions_dict = dict(zip(actions, encodings))
+
+    for action in actions:
+        if action not in allowed_actions:
+            actions_dict.pop(action)
+
+    return actions_dict
+
+def get_actions_from_file(cfg_filname):
+    # TODO: use regex to parse the file and get the list of actions in order that they apear in the file
+    return ['MOVE_LEFT', 'MOVE_RIGHT', 'ATTACK']
 
 
 def main_random(config_file_path, notebook=False):

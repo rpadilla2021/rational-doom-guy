@@ -104,10 +104,8 @@ class GeneralizedDQN(nn.Module):
         out_feats = len(GeneralizedDQN.actions)
 
         print("CREATING THE NET, INPUT FEATURES", img_shape, "      OUTPUT FEATURES ", out_feats)
-
-
-
         # TODO: Finalize and implement final NN aritcheture to calculate q values
+
 
     def forward(self, t):
         # TODO: Will need to update as architecture (above) changes

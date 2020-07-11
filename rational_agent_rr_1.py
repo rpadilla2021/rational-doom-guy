@@ -191,7 +191,10 @@ def rational_trainer(notebook=False):
         print("Result:", final_reward)
         print("Last LOSS:", loss.item())
         rawards.append(final_reward)
-        plot(rawards, 100)
+        if i==episodes-1:
+            plot(rawards, 100, True)
+        else:
+            plot(rawards, 100)
         time.sleep(0.005)
         torch.cuda.empty_cache()
 

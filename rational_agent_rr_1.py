@@ -166,7 +166,7 @@ def rational_trainer(notebook=False):
                 target_q_vals = rewards + gamma_discount * next_q_vals
 
                 # Step 11c: Calculate MSE (or any other) Loss between output and target values
-                loss = F.mse_loss(pred_q_vals, target_q_vals)  # replace the nones
+                loss = F.SmoothL1Loss(pred_q_vals, target_q_vals)  # replace the nones
                 # print("LOSS: ", loss.item())
 
                 # Step 12: Use gradient descent, or ADAM, to update weights along the policy network

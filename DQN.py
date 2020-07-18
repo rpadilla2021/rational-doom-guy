@@ -103,7 +103,7 @@ class HealthDQN(nn.Module):
         print("CREATING THE NET, INPUT FEATURES", img_shape, "      OUTPUT FEATURES ", out_feats)
         self.conv1 = nn.Conv2d(1, 6, 4, stride=1)
         self.pool1 = nn.MaxPool2d((2, 2), padding=(0, 0), dilation=(1, 1))
-        self.conv2 = nn.Conv2d(6, 2, 2, stride=1)
+        self.conv2 = nn.Conv2d(6, 2, 4, stride=1)
 
         f = self.get_dim_post_conv
 
@@ -114,10 +114,10 @@ class HealthDQN(nn.Module):
         self.fc_feats = in_feats
 
         self.fc1 = nn.Linear(in_features=in_feats, out_features=16)
-        self.lstm1 = nn.LSTM(16, 12)
-        self.fc2 = nn.Linear(in_features=12, out_features=8)
-        self.drop1 = nn.Dropout(0.2)
-        self.out = nn.Linear(in_features=8, out_features=out_feats)
+        self.lstm1 = nn.LSTM(16, 16)
+        self.fc2 = nn.Linear(in_features=16, out_features=10)
+        #self.drop1 = nn.Dropout(0.1)
+        self.out = nn.Linear(in_features=10, out_features=out_feats)
 
     @staticmethod
     def get_dim_post_conv(img_shape, conv_layer):
@@ -156,7 +156,8 @@ class HealthDQN(nn.Module):
         t = F.relu(self.fc1(t))
         #print(t.unsqueeze(-1).shape)
         t, _ = self.lstm1(t.unsqueeze(0))
-        t = self.drop1(t.squeeze(0))
+        t = t.squeeze(0)
+        #t = self.drop1(t)
         t = F.relu(self.fc2(t))
         t = self.out(t)
         return t

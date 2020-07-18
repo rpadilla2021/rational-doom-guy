@@ -102,10 +102,9 @@ def rational_trainer(notebook=False):
     # Step 3b: Initialize an Optimizer
     learning_rate = 0.25  # HYPERPARAM
     optimizer = optim.Adam(params=policy_nn.parameters(), lr=learning_rate)
-
     # Step 4: Iterate over episodes
     episodes = 2000
-    explorer = Explorer(1, 0.05, 0.00009)
+    explorer = Explorer(1, 0.05, 0.000009)
     time_step_ctr = 0
 
     rawards = []
@@ -151,7 +150,7 @@ def rational_trainer(notebook=False):
             memo.push(exp)
 
             # Step 10: Sample random batch from replay memory
-            batch_size = 500
+            batch_size = 100
             loss = torch.tensor(-1).to(device)
             if memo.can_sample(batch_size):
                 states, actions, next_states, rewards = memo.sample_tensors(batch_size)
@@ -166,7 +165,7 @@ def rational_trainer(notebook=False):
                 target_q_vals = rewards + gamma_discount * next_q_vals
 
                 # Step 11c: Calculate MSE (or any other) Loss between output and target values
-                loss = F.SmoothL1Loss(pred_q_vals, target_q_vals)  # replace the nones
+                loss = F.mse_loss(pred_q_vals, target_q_vals)  # replace the nones
                 # print("LOSS: ", loss.item())
 
                 # Step 12: Use gradient descent, or ADAM, to update weights along the policy network

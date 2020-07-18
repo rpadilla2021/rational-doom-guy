@@ -78,9 +78,11 @@ def moving_average(arr, period):
     return result
 
 
-def plot(arr, ma_period):
+def plot(arr, ma_period,final=False):
     plt.clf()
     y = moving_average(arr, ma_period)
     plt.plot(y)
     plt.draw()
+    if final:
+        plt.savefig('final_graph.png')
     plt.pause(0.0001)

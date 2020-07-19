@@ -6,9 +6,9 @@ import torchvision.transforms as T
 from itertools import count
 import numpy as np
 
-
 # Purpose of this class is to define our neural_net architecture and the methods we need to train, save, and test our NN
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 class BasicDQN(nn.Module):
 
@@ -44,10 +44,12 @@ class BasicDQN(nn.Module):
         in_channels, h_in, w_in = img_shape
 
         assert img_shape[0] == in_channels
-        #print(conv_layer.padding)
-        h_out = (h_in + 2 * conv_layer.padding[0] - conv_layer.dilation[0] * (conv_layer.kernel_size[0] - 1) - 1)/ conv_layer.stride[0] + 1
-        w_out = (w_in + 2 * conv_layer.padding[1] - conv_layer.dilation[1] * (conv_layer.kernel_size[1] - 1) - 1)/conv_layer.stride[1] + 1
-        #print(h_out, w_out)
+        # print(conv_layer.padding)
+        h_out = (h_in + 2 * conv_layer.padding[0] - conv_layer.dilation[0] * (conv_layer.kernel_size[0] - 1) - 1) / \
+                conv_layer.stride[0] + 1
+        w_out = (w_in + 2 * conv_layer.padding[1] - conv_layer.dilation[1] * (conv_layer.kernel_size[1] - 1) - 1) / \
+                conv_layer.stride[1] + 1
+        # print(h_out, w_out)
         h_out, w_out = int(np.floor(h_out)), int(np.floor(w_out))
 
         if not hasattr(conv_layer, 'out_channels'):
@@ -55,7 +57,7 @@ class BasicDQN(nn.Module):
         else:
             result = conv_layer.out_channels, h_out, w_out
 
-        #print(result)
+        # print(result)
         return result
 
     def forward(self, t):
@@ -91,6 +93,7 @@ class BasicDQN(nn.Module):
                 print(result, "\n")
             return result
 
+
 class HealthDQN(nn.Module):
 
     def __init__(self, img_shape, output_actions):
@@ -101,13 +104,13 @@ class HealthDQN(nn.Module):
         out_feats = len(output_actions)
         # TODO: Finalize and implement final NN aritcheture to calculate q values
         print("CREATING THE NET, INPUT FEATURES", img_shape, "      OUTPUT FEATURES ", out_feats)
-        self.conv1 = nn.Conv2d(1, 6, 4, stride=1)
+        self.conv1 = nn.Conv2d(1, 7, 5, stride=1)
         self.pool1 = nn.MaxPool2d((2, 2), padding=(0, 0), dilation=(1, 1))
-        self.conv2 = nn.Conv2d(6, 2, 4, stride=1)
-
+        self.conv2 = nn.Conv2d(7, 4, 3, stride=1)
+        self.conv3 = nn.Conv2d(4, 2, 2, stride=1)
         f = self.get_dim_post_conv
 
-        resize_dim = f(f(f(f(img_shape, self.conv1), self.pool1), self.conv2), self.pool1)
+        resize_dim = f(f(f(f(f(img_shape, self.conv1), self.pool1), self.conv2), self.pool1), self.conv3)
         print("After Convolutions Size: ", resize_dim)
 
         in_feats = np.product(list(resize_dim))
@@ -116,7 +119,7 @@ class HealthDQN(nn.Module):
         self.fc1 = nn.Linear(in_features=in_feats, out_features=16)
         self.lstm1 = nn.LSTM(16, 16)
         self.fc2 = nn.Linear(in_features=16, out_features=10)
-        #self.drop1 = nn.Dropout(0.1)
+        # self.drop1 = nn.Dropout(0.1)
         self.out = nn.Linear(in_features=10, out_features=out_feats)
 
     @staticmethod
@@ -127,10 +130,12 @@ class HealthDQN(nn.Module):
         in_channels, h_in, w_in = img_shape
 
         assert img_shape[0] == in_channels
-        #print(conv_layer.padding)
-        h_out = (h_in + 2 * conv_layer.padding[0] - conv_layer.dilation[0] * (conv_layer.kernel_size[0] - 1) - 1)/ conv_layer.stride[0] + 1
-        w_out = (w_in + 2 * conv_layer.padding[1] - conv_layer.dilation[1] * (conv_layer.kernel_size[1] - 1) - 1)/conv_layer.stride[1] + 1
-        #print(h_out, w_out)
+        # print(conv_layer.padding)
+        h_out = (h_in + 2 * conv_layer.padding[0] - conv_layer.dilation[0] * (conv_layer.kernel_size[0] - 1) - 1) / \
+                conv_layer.stride[0] + 1
+        w_out = (w_in + 2 * conv_layer.padding[1] - conv_layer.dilation[1] * (conv_layer.kernel_size[1] - 1) - 1) / \
+                conv_layer.stride[1] + 1
+        # print(h_out, w_out)
         h_out, w_out = int(np.floor(h_out)), int(np.floor(w_out))
 
         if not hasattr(conv_layer, 'out_channels'):
@@ -138,7 +143,7 @@ class HealthDQN(nn.Module):
         else:
             result = conv_layer.out_channels, h_out, w_out
 
-        #print(result)
+        # print(result)
         return result
 
     def forward(self, t):
@@ -151,13 +156,14 @@ class HealthDQN(nn.Module):
         t = self.pool1(t)
         t = F.relu(self.conv2(t))
         t = self.pool1(t)
+        t = F.relu(self.conv3(t))
         # print(t.shape)
         t = t.view(-1, self.fc_feats)
         t = F.relu(self.fc1(t))
-        #print(t.unsqueeze(-1).shape)
+        # print(t.unsqueeze(-1).shape)
         t, _ = self.lstm1(t.unsqueeze(0))
         t = t.squeeze(0)
-        #t = self.drop1(t)
+        # t = self.drop1(t)
         t = F.relu(self.fc2(t))
         t = self.out(t)
         return t

@@ -33,12 +33,14 @@ def print_game_state(gameState, notebook=False):
 
 def preprocess_state_image(img):
     result = torch.tensor(img).to(device).float()
+    #print(result.shape)
 
     result = torch.mean(result, dim=0)
+    #print(result.shape)
 
-    result = result[75:200,75:200].unsqueeze(0).unsqueeze(0).to(device)
+    result = result.unsqueeze(0).unsqueeze(0).to(device)
 
-    result = F.interpolate(result, scale_factor=(0.9, 0.5), mode='bilinear', recompute_scale_factor=True,
+    result = F.interpolate(result, scale_factor=(1, 0.75), mode='bilinear', recompute_scale_factor=True,
                            align_corners=True).squeeze(0)
     return result
 
@@ -240,7 +242,8 @@ def rational_tester(model_path, notebook=False):
 
             action_todo = policy_nn.select_best_action(processed_s, show=True)
             action_todo = list(action_todo)
-            reward = game.make_action(action_todo, 4)
+            skip_rate = 4
+            reward = game.make_action(action_todo, skip_rate)
 
             state = game.get_state()
             print_game_state(state, notebook)

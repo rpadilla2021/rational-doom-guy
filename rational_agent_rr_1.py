@@ -9,9 +9,9 @@ import torch.optim as optim
 import torch.nn.functional as F
 import torchvision.transforms as T
 import matplotlib.pyplot as plt
+import pickle
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
 
 def print_game_state(gameState, notebook=False):
     if not gameState:
@@ -36,12 +36,11 @@ def preprocess_state_image(img):
 
     result = torch.mean(result, dim=0)
 
-    result = result[75:200, 75:200].unsqueeze(0).unsqueeze(0).to(device)
+    result = result[75:200,75:200].unsqueeze(0).unsqueeze(0).to(device)
 
     result = F.interpolate(result, scale_factor=(0.9, 0.5), mode='bilinear', recompute_scale_factor=True,
                            align_corners=True).squeeze(0)
     return result
-
 
 def main_random(notebook=False):
     # Step 1: Initialize game enviornment
@@ -72,7 +71,6 @@ def main_random(notebook=False):
         print("Result:", game.get_total_reward())
         time.sleep(1)
 
-
 def rational_trainer(notebook=False):
     # Step 1: Initialize game enviornment
     game = DoomGame()
@@ -86,7 +84,7 @@ def rational_trainer(notebook=False):
     actions = [left, right, straight]
 
     # Step 2: Intitialize replay memory capacity
-    capacity = 10000  # HYPERPARAM
+    capacity = 10000 # HYPERPARAM
     memo = ReplayMemory(capacity)
 
     # Step 3: Construct and initialize policy network with random weights or weights from previous training sessions
@@ -100,12 +98,13 @@ def rational_trainer(notebook=False):
     target_nn.load_state_dict(policy_nn.state_dict())  # clones the weights of policy into target
     target_nn.eval()  # puts the target net into 'EVAL ONLY' mode, no gradients will be tracked or weights updated
 
+
     # Step 3b: Initialize an Optimizer
     learning_rate = 0.25  # HYPERPARAM
     optimizer = optim.Adam(params=policy_nn.parameters(), lr=learning_rate)
     # Step 4: Iterate over episodes
     episodes = 2000
-    explorer = Explorer(1, 0.05, 0.000009)
+    explorer = Explorer(1, 0.05, 0.000005)
     time_step_ctr = 0
 
     rawards = []
@@ -191,7 +190,7 @@ def rational_trainer(notebook=False):
         print("Result:", final_reward)
         print("Last LOSS:", loss.item())
         rawards.append(final_reward)
-        if i == episodes - 1:
+        if i==episodes-1:
             plot(rawards, 100, True)
         else:
             plot(rawards, 100)
@@ -217,6 +216,14 @@ def rational_tester(model_path, notebook=False):
     test_state = game.get_state()
     processed_test = preprocess_state_image(test_state.screen_buffer)
     policy_nn = HealthDQN(processed_test.shape, actions).to(device)
+
+    #pickle stuff
+    with open('linearregression.pickle','wb') as f:
+        pickle.dump(policy_nn, f)
+
+    with open('linearregression.pickle','rb') as f:
+        policy_nn = pickle.load(f)
+    #end pickle
 
     policy_nn.load_state_dict(torch.load(model_path))
     policy_nn.eval()
@@ -248,4 +255,4 @@ def rational_tester(model_path, notebook=False):
 
 if __name__ == '__main__':
     rational_trainer(notebook=False)
-    # main_random(notebook=True)
+    #main_random(notebook=True)

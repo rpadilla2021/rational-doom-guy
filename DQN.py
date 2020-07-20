@@ -104,10 +104,10 @@ class HealthDQN(nn.Module):
         out_feats = len(output_actions)
         # TODO: Finalize and implement final NN aritcheture to calculate q values
         print("CREATING THE NET, INPUT FEATURES", img_shape, "      OUTPUT FEATURES ", out_feats)
-        self.conv1 = nn.Conv2d(1, 7, 5, stride=1)
+        self.conv1 = nn.Conv2d(1, 10, 5, stride=1)
         self.pool1 = nn.MaxPool2d((2, 2), padding=(0, 0), dilation=(1, 1))
-        self.conv2 = nn.Conv2d(7, 4, 3, stride=1)
-        self.conv3 = nn.Conv2d(4, 2, 2, stride=1)
+        self.conv2 = nn.Conv2d(10, 7, 3, stride=1)
+        self.conv3 = nn.Conv2d(7, 4, 2, stride=1)
         f = self.get_dim_post_conv
 
         resize_dim = f(f(f(f(f(img_shape, self.conv1), self.pool1), self.conv2), self.pool1), self.conv3)

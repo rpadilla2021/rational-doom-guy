@@ -100,10 +100,10 @@ def rational_trainer(notebook=False):
 
 
     # Step 3b: Initialize an Optimizer
-    learning_rate = 0.25  # HYPERPARAM
+    learning_rate = 0.15 # HYPERPARAM
     optimizer = optim.Adam(params=policy_nn.parameters(), lr=learning_rate)
     # Step 4: Iterate over episodes
-    episodes = 2000
+    episodes = 5000
     explorer = Explorer(1, 0.05, 0.000005)
     time_step_ctr = 0
 
@@ -150,7 +150,7 @@ def rational_trainer(notebook=False):
             memo.push(exp)
 
             # Step 10: Sample random batch from replay memory
-            batch_size = 100
+            batch_size = 125
             loss = torch.tensor(-1).to(device)
             if memo.can_sample(batch_size):
                 states, actions, next_states, rewards = memo.sample_tensors(batch_size)

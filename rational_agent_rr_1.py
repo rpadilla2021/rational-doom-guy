@@ -86,7 +86,7 @@ def rational_trainer(notebook=False):
     actions = [left, right, straight]
 
     # Step 2: Intitialize replay memory capacity
-    capacity = 1000 # HYPERPARAM
+    capacity = 1500 # HYPERPARAM
     memo = ReplayMemory(capacity)
 
     # Step 3: Construct and initialize policy network with random weights or weights from previous training sessions
@@ -102,11 +102,11 @@ def rational_trainer(notebook=False):
 
 
     # Step 3b: Initialize an Optimizer
-    learning_rate = 0.15 # HYPERPARAM
+    learning_rate = 0.1 # HYPERPARAM
     optimizer = optim.Adam(params=policy_nn.parameters(), lr=learning_rate)
     # Step 4: Iterate over episodes
     episodes = 5000
-    explorer = Explorer(1, 0.05, 0.000005)
+    explorer = Explorer(1, 0.05, 0.00001)
     time_step_ctr = 0
 
     rawards = []
@@ -152,7 +152,7 @@ def rational_trainer(notebook=False):
             memo.push(exp)
 
             # Step 10: Sample random batch from replay memory
-            batch_size = 125
+            batch_size = 200
             loss = torch.tensor(-1).to(device)
             if memo.can_sample(batch_size):
                 states, actions, next_states, rewards = memo.sample_tensors(batch_size)

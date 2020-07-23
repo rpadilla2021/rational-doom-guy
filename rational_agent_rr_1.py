@@ -40,8 +40,8 @@ def preprocess_state_image(img):
 
     result = result.unsqueeze(0).unsqueeze(0).to(device)
 
-    result = F.interpolate(result, scale_factor=(1, 0.75), mode='bilinear', recompute_scale_factor=True,
-                           align_corners=True).squeeze(0)
+    result = F.interpolate(result, scale_factor=(0.50, 0.50), mode='bilinear', recompute_scale_factor=True,
+                           align_corners=True).squeeze(0)[0:120,20:]
     return result
 
 def main_random(notebook=False):
@@ -86,7 +86,7 @@ def rational_trainer(notebook=False):
     actions = [left, right, straight]
 
     # Step 2: Intitialize replay memory capacity
-    capacity = 10000 # HYPERPARAM
+    capacity = 1000 # HYPERPARAM
     memo = ReplayMemory(capacity)
 
     # Step 3: Construct and initialize policy network with random weights or weights from previous training sessions

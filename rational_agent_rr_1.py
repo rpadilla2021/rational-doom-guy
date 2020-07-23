@@ -40,8 +40,8 @@ def preprocess_state_image(img):
 
     result = result.unsqueeze(0).unsqueeze(0).to(device)
 
-    result = F.interpolate(result, scale_factor=(0.50, 0.50), mode='bilinear', recompute_scale_factor=True,
-                           align_corners=True).squeeze(0)[0:120,20:]
+    result = F.interpolate(result, scale_factor=(0.55, 0.55), mode='bilinear', recompute_scale_factor=True,
+                           align_corners=True).squeeze(0)[:,25:]
     return result
 
 def main_random(notebook=False):
@@ -167,7 +167,7 @@ def rational_trainer(notebook=False):
                 target_q_vals = rewards + gamma_discount * next_q_vals
 
                 # Step 11c: Calculate MSE (or any other) Loss between output and target values
-                loss = F.mse_loss(pred_q_vals, target_q_vals)  # replace the nones
+                loss = F.smooth_l1_loss(pred_q_vals, target_q_vals)  # replace the nones
                 # print("LOSS: ", loss.item())
 
                 # Step 12: Use gradient descent, or ADAM, to update weights along the policy network

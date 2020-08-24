@@ -1,5 +1,5 @@
 # Rational Doom Guy
-### By Aryan Luthra, Richard Padilla, Kavi Vaidya, and Randall Williams
+### By Aryan Luthra and Richard Padilla
 
 ## Installation instructions:
 
